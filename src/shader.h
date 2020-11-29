@@ -10,7 +10,7 @@ enum shader_type {
 struct shader {
     int type;
     long length;
-    char* source;
+    const char* source;
 };
 
 #endif
