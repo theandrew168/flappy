@@ -7,6 +7,11 @@
 
 #include "opengl.h"
 
+#include "shaders/bg_vert.h"
+#include "shaders/bg_frag.h"
+#include "shaders/demo_vert.h"
+#include "shaders/demo_frag.h"
+
 #ifndef M_PI
 #define M_PI 3.141592653589793
 #endif
@@ -155,26 +160,10 @@ main(int argc, char* argv[])
 
 
     // Do modern OpenGL stuff
-    const GLchar *vs_source =
-        "#version 330\n"
-        "layout(location = 0) in vec2 point;\n"
-        "uniform float angle;\n"
-        "void main() {\n"
-        "    mat2 rotate = mat2(cos(angle), -sin(angle),\n"
-        "                       sin(angle), cos(angle));\n"
-        "    gl_Position = vec4(0.75 * rotate * point, 0.0, 1.0);\n"
-        "}\n";
-    const GLchar *fs_source =
-        "#version 330\n"
-        "out vec4 color;\n"
-        "void main() {\n"
-        "    color = vec4(1, 0.15, 0.15, 0);\n"
-        "}\n";
-
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    opengl_shader_compile_source(vs, vs_source);
-    opengl_shader_compile_source(fs, fs_source);
+    opengl_shader_compile_source(vs, SHADER_DEMO_VERT.source);
+    opengl_shader_compile_source(fs, SHADER_DEMO_FRAG.source);
 
     GLuint prog = glCreateProgram();
     opengl_shader_link_program(prog, vs, fs);
