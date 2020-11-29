@@ -50,7 +50,7 @@ flappy: src/main.c libflappy.a
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr flappy *.exe *.a *.so src/*.o
+	rm -fr flappy *.exe *.a *.so *.dll src/*.o
 
 
 # Default rule for compiling .c files to .o object files
