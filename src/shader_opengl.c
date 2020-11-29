@@ -1,10 +1,9 @@
 #include <GL/glcorearb.h>
 
-#include "shader.h"
 #include "shader_opengl.h"
 
 GLuint
-shader_opengl_compile(struct shader shader)
+shader_opengl_compile(const char* source, long length)
 {
     return 0;
 }

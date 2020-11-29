@@ -42,15 +42,77 @@ libflappy.so: $(libflappy_objects)
 
 
 # Build the main executable
-flappy: src/main.c libflappy.a
+flappy: src/main.c libflappy.a resources
 	@echo "EXE     $@"
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c libflappy.a $(LDLIBS)
+
+
+# Create the virtualenv for pre/post build scripts
+venv:
+	python3 -m venv venv/
+	./venv/bin/pip install -Uq wheel
+	./venv/bin/pip install -Uq -r scripts/requirements.txt
+
+
+# Declare required resource headers
+resource_headers =         \
+  src/models/square.h      \
+  src/shaders/bg_frag.h    \
+  src/shaders/bg_vert.h    \
+  src/shaders/bird_frag.h  \
+  src/shaders/bird_vert.h  \
+  src/shaders/demo_frag.h  \
+  src/shaders/demo_vert.h  \
+  src/shaders/fade_frag.h  \
+  src/shaders/fade_vert.h  \
+  src/shaders/pipe_frag.h  \
+  src/shaders/pipe_vert.h  \
+  src/textures/bg.h        \
+  src/textures/bird.h      \
+  src/textures/pipe.h
+
+# Express dependencies between header and resource files
+src/models/square.h: res/models/square.obj
+src/shaders/bg_frag.h: res/shaders/bg.frag
+src/shaders/bg_vert.h: res/shaders/bg.vert
+src/shaders/bird_frag.h: res/shaders/bird.frag
+src/shaders/bird_vert.h: res/shaders/bird.vert
+src/shaders/demo_frag.h: res/shaders/demo.frag
+src/shaders/demo_vert.h: res/shaders/demo.vert
+src/shaders/fade_frag.h: res/shaders/fade.frag
+src/shaders/fade_vert.h: res/shaders/fade.vert
+src/shaders/pipe_frag.h: res/shaders/pipe.frag
+src/shaders/pipe_vert.h: res/shaders/pipe.vert
+src/textures/bg.h: res/textures/bg.jpeg
+src/textures/bird.h: res/textures/bird.png
+src/textures/pipe.h: res/textures/pipe.png
+
+# Convert resource files into headers
+.PHONY: resources
+resources: venv $(resource_headers)
+	mkdir -p src/models/
+	mkdir -p src/shaders/
+	mkdir -p src/textures/
+	./venv/bin/python3 scripts/res2header.py res/models/square.obj src/models/square.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/bg.frag src/shaders/bg_frag.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/bg.vert src/shaders/bg_vert.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/bird.frag src/shaders/bird_frag.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/bird.vert src/shaders/bird_vert.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/demo.frag src/shaders/demo_frag.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/demo.vert src/shaders/demo_vert.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/fade.frag src/shaders/fade_frag.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/fade.vert src/shaders/fade_vert.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/pipe.frag src/shaders/pipe_frag.h
+	./venv/bin/python3 scripts/res2header.py res/shaders/pipe.vert src/shaders/pipe_vert.h
+	./venv/bin/python3 scripts/res2header.py res/textures/bg.jpeg src/textures/bg.h
+	./venv/bin/python3 scripts/res2header.py res/textures/bird.png src/textures/bird.h
+	./venv/bin/python3 scripts/res2header.py res/textures/pipe.png src/textures/pipe.h
 
 
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr flappy *.exe *.a *.so *.dll src/*.o
+	rm -fr flappy *.exe *.a *.so *.dll src/*.o src/models/ src/shaders/ src/textures/
 
 
 # Default rule for compiling .c files to .o object files

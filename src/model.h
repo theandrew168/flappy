@@ -8,10 +8,4 @@ enum model_format {
     MODEL_FORMAT_T2F_N3F_V3F,
 };
 
-struct model {
-    int format;
-    long count;
-    float* vertices;
-};
-
 #endif

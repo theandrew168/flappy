@@ -7,11 +7,4 @@ enum texture_format {
     TEXTURE_FORMAT_RGBA,
 };
 
-struct texture {
-    int format;
-    long width;
-    long height;
-    char* pixels;
-};
-
 #endif

@@ -7,10 +7,4 @@ enum shader_type {
     SHADER_TYPE_FRAGMENT,
 };
 
-struct shader {
-    int type;
-    long length;
-    const char* source;
-};
-
 #endif

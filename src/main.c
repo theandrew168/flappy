@@ -11,6 +11,9 @@
 #include "shaders/bg_frag.h"
 #include "shaders/demo_vert.h"
 #include "shaders/demo_frag.h"
+#include "textures/bg.h"
+#include "textures/bird.h"
+#include "textures/pipe.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653589793

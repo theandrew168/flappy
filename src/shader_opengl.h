@@ -3,9 +3,7 @@
 
 #include <GL/glcorearb.h>
 
-#include "shader.h"
-
-GLuint shader_opengl_compile(struct shader shader);
+GLuint shader_opengl_compile(const char* source, long length);
 GLuint shader_opengl_link(GLuint vertex_shader, GLuint fragment_shader);
 
 #endif

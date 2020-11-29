@@ -1,3 +1,6 @@
+src/models/
+src/shaders/
+src/textures/
 venv/
 __pycache__/
 *.pyc
