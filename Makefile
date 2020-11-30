@@ -17,7 +17,6 @@ LDLIBS  = -lGL -lglfw
 
 # Declare which targets should be built by default
 default: flappy
-all: libflappy.a libflappy.so flappy
 
 
 # Declare library sources
@@ -34,11 +33,6 @@ src/shader_opengl.o: src/shader_opengl.c src/shader_opengl.h src/shader.h
 libflappy.a: $(libflappy_objects)
 	@echo "STATIC  $@"
 	@$(AR) rcs $@ $(libflappy_objects)
-
-# Build the shared library
-libflappy.so: $(libflappy_objects)
-	@echo "SHARED  $@"
-	@$(CC) $(LDFLAGS) -shared -o $@ $(libflappy_objects) $(LDLIBS)
 
 # Double suffix rule for compiling .c files to .o object files
 .SUFFIXES: .c .o
