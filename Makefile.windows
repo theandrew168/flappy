@@ -85,9 +85,11 @@ flappy.exe: src/main.c libflappy.a $(resource_headers)
 
 # Create the virtualenv for pre/post build scripts
 venv:
-	python3 -m venv venv/
-	./venv/bin/pip install -Uq wheel
-	./venv/bin/pip install -Uq -r scripts/requirements.txt
+	@echo "VENV    venv/"
+	@python3 -m venv venv/
+	@./venv/bin/pip install -Uq wheel
+	@echo "REQS    scripts/requirements.txt"
+	@./venv/bin/pip install -Uq -r scripts/requirements.txt
 
 # Double suffix rules for convertion resource files to header files
 .SUFFIXES: .obj .h
