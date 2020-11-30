@@ -12,20 +12,14 @@ For Windows builds, [mingw-w64](http://mingw-w64.org/doku.php) is used to cross-
 ### Linux
 ```
 # debian-based
-sudo apt install gcc make libglfw3-dev
-
-# RHEL-based
-sudo dnf install gcc make glfw-devel
-
-# arch-based
-sudo pacman -Syu gcc make glfw-x11
+sudo apt install gcc make libglfw3-dev python3 python3-venv
 
 make
 ```
 
 ### macOS
 ```
-brew install make
+brew install make python3
 make -f Makefile.macos
 ```
 
@@ -35,19 +29,13 @@ Windows binaries are cross-compiled from Linux or macOS.
 From Linux:
 ```
 # debian-based
-sudo apt install make mingw-w64
-
-# RHEL-based
-sudo dnf install make mingw64-gcc
-
-# arch-based
-sudo pacman -Syu make mingw-w64
+sudo apt install make mingw-w64 python3 python3-venv
 
 make -f Makefile.windows
 ```
 
 From macOS:
 ```
-brew install make mingw-w64
+brew install make mingw-w64 python3
 make -f Makefile.windows
 ```
