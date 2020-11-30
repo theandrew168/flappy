@@ -10,7 +10,7 @@ CFLAGS += -fPIC -g -Og
 CFLAGS += -DGLFW_INCLUDE_NONE
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
-CFLAGS += -Isrc/ -Ivendor/include/
+CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
 LDFLAGS =
 LDLIBS  = -lGL -lglfw
 
@@ -40,9 +40,49 @@ libflappy.so: $(libflappy_objects)
 	@echo "SHARED  $@"
 	@$(CC) $(LDFLAGS) -shared -o $@ $(libflappy_objects) $(LDLIBS)
 
+# Double suffix rule for compiling .c files to .o object files
+.SUFFIXES: .c .o
+.c.o:
+	@echo "CC      $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
-# Build the main executable
-flappy: src/main.c libflappy.a resources
+
+# Declare required resource headers
+resource_headers =         \
+  res/models/square.h      \
+  res/shaders/bg_frag.h    \
+  res/shaders/bg_vert.h    \
+  res/shaders/bird_frag.h  \
+  res/shaders/bird_vert.h  \
+  res/shaders/demo_frag.h  \
+  res/shaders/demo_vert.h  \
+  res/shaders/fade_frag.h  \
+  res/shaders/fade_vert.h  \
+  res/shaders/pipe_frag.h  \
+  res/shaders/pipe_vert.h  \
+  res/textures/bg.h        \
+  res/textures/bird.h      \
+  res/textures/pipe.h
+
+# Express dependencies between header and resource files
+res/models/square.h: res/models/square.obj
+res/shaders/bg_frag.h: res/shaders/bg_frag.glsl
+res/shaders/bg_vert.h: res/shaders/bg_vert.glsl
+res/shaders/bird_frag.h: res/shaders/bird_frag.glsl
+res/shaders/bird_vert.h: res/shaders/bird_vert.glsl
+res/shaders/demo_frag.h: res/shaders/demo_frag.glsl
+res/shaders/demo_vert.h: res/shaders/demo_vert.glsl
+res/shaders/fade_frag.h: res/shaders/fade_frag.glsl
+res/shaders/fade_vert.h: res/shaders/fade_vert.glsl
+res/shaders/pipe_frag.h: res/shaders/pipe_frag.glsl
+res/shaders/pipe_vert.h: res/shaders/pipe_vert.glsl
+res/textures/bg.h: res/textures/bg.jpeg
+res/textures/bird.h: res/textures/bird.png
+res/textures/pipe.h: res/textures/pipe.png
+
+
+# Compile and link the main executable
+flappy: src/main.c libflappy.a $(resource_headers)
 	@echo "EXE     $@"
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c libflappy.a $(LDLIBS)
 
@@ -53,70 +93,44 @@ venv:
 	./venv/bin/pip install -Uq wheel
 	./venv/bin/pip install -Uq -r scripts/requirements.txt
 
+# Double suffix rules for convertion resource files to header files
+.SUFFIXES: .obj .h
+.obj.h: venv
+	@echo "MODEL   $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
 
-# Declare required resource headers
-resource_headers =         \
-  src/models/square.h      \
-  src/shaders/bg_frag.h    \
-  src/shaders/bg_vert.h    \
-  src/shaders/bird_frag.h  \
-  src/shaders/bird_vert.h  \
-  src/shaders/demo_frag.h  \
-  src/shaders/demo_vert.h  \
-  src/shaders/fade_frag.h  \
-  src/shaders/fade_vert.h  \
-  src/shaders/pipe_frag.h  \
-  src/shaders/pipe_vert.h  \
-  src/textures/bg.h        \
-  src/textures/bird.h      \
-  src/textures/pipe.h
+.SUFFIXES: .glsl .h
+.glsl.h: venv
+	@echo "SHADER  $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
 
-# Express dependencies between header and resource files
-src/models/square.h: res/models/square.obj
-src/shaders/bg_frag.h: res/shaders/bg.frag
-src/shaders/bg_vert.h: res/shaders/bg.vert
-src/shaders/bird_frag.h: res/shaders/bird.frag
-src/shaders/bird_vert.h: res/shaders/bird.vert
-src/shaders/demo_frag.h: res/shaders/demo.frag
-src/shaders/demo_vert.h: res/shaders/demo.vert
-src/shaders/fade_frag.h: res/shaders/fade.frag
-src/shaders/fade_vert.h: res/shaders/fade.vert
-src/shaders/pipe_frag.h: res/shaders/pipe.frag
-src/shaders/pipe_vert.h: res/shaders/pipe.vert
-src/textures/bg.h: res/textures/bg.jpeg
-src/textures/bird.h: res/textures/bird.png
-src/textures/pipe.h: res/textures/pipe.png
+.SUFFIXES: .bmp .h
+.bmp.h: venv
+	@echo "TEXTURE $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
 
-# Convert resource files into headers
-.PHONY: resources
-resources: venv $(resource_headers)
-	mkdir -p src/models/
-	mkdir -p src/shaders/
-	mkdir -p src/textures/
-	./venv/bin/python3 scripts/res2header.py res/models/square.obj src/models/square.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/bg.frag src/shaders/bg_frag.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/bg.vert src/shaders/bg_vert.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/bird.frag src/shaders/bird_frag.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/bird.vert src/shaders/bird_vert.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/demo.frag src/shaders/demo_frag.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/demo.vert src/shaders/demo_vert.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/fade.frag src/shaders/fade_frag.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/fade.vert src/shaders/fade_vert.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/pipe.frag src/shaders/pipe_frag.h
-	./venv/bin/python3 scripts/res2header.py res/shaders/pipe.vert src/shaders/pipe_vert.h
-	./venv/bin/python3 scripts/res2header.py res/textures/bg.jpeg src/textures/bg.h
-	./venv/bin/python3 scripts/res2header.py res/textures/bird.png src/textures/bird.h
-	./venv/bin/python3 scripts/res2header.py res/textures/pipe.png src/textures/pipe.h
+.SUFFIXES: .jpeg .h
+.jpeg.h: venv
+	@echo "TEXTURE $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
+
+.SUFFIXES: .jpg .h
+.jpg.h: venv
+	@echo "TEXTURE $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
+
+.SUFFIXES: .png .h
+.png.h: venv
+	@echo "TEXTURE $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
+
+.SUFFIXES: .tga .h
+.tga.h: venv
+	@echo "TEXTURE $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
 
 
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr flappy *.exe *.a *.so *.dll src/*.o src/models/ src/shaders/ src/textures/
-
-
-# Default rule for compiling .c files to .o object files
-.SUFFIXES: .c .o
-.c.o:
-	@echo "CC      $@"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	rm -fr flappy *.exe *.a *.so *.dll src/*.o res/models/*.h res/shaders/*.h res/textures/*.h

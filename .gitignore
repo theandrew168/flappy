@@ -1,9 +1,17 @@
-src/models/
-src/shaders/
-src/textures/
-venv/
-__pycache__/
+# Project artifacts
+flappy
+libflappy.a
+libflappy.so
+
+# Resource headers
+res/models/*.h
+res/shaders/*.h
+res/textures/*.h
+
+# Python scripts
 *.pyc
+__pycache__/
+venv/
 
 # Prerequisites
 *.d

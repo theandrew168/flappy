@@ -7,6 +7,7 @@
 
 #include "opengl.h"
 
+#include "models/square.h"
 #include "shaders/bg_vert.h"
 #include "shaders/bg_frag.h"
 #include "shaders/demo_vert.h"
@@ -19,13 +20,6 @@
 #define M_PI 3.141592653589793
 #endif
 
-const float SQUARE[] = {
-    -1.0f,  1.0f,
-    -1.0f, -1.0f,
-     1.0f,  1.0f,
-     1.0f, -1.0f
-};
-
 static void
 print_usage(const char* arg0)
 {
@@ -36,6 +30,12 @@ print_usage(const char* arg0)
     printf("  -f --fullscreen  fullscreen window\n");
     printf("  -r --resizable   resizable window\n");
     printf("  -v --vsync       enable vsync\n");
+}
+
+static void
+framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
 }
 
 static bool
@@ -161,12 +161,13 @@ main(int argc, char* argv[])
     printf("OpenGL Version:  %s\n", glGetString(GL_VERSION));
     printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Do modern OpenGL stuff
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    opengl_shader_compile_source(vs, SHADER_DEMO_VERT.source);
-    opengl_shader_compile_source(fs, SHADER_DEMO_FRAG.source);
+    opengl_shader_compile_source(vs, SHADER_DEMO_VERT_SOURCE);
+    opengl_shader_compile_source(fs, SHADER_DEMO_FRAG_SOURCE);
 
     GLuint prog = glCreateProgram();
     opengl_shader_link_program(prog, vs, fs);
@@ -180,14 +181,14 @@ main(int argc, char* argv[])
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(SQUARE), SQUARE, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(MODEL_SQUARE_VERTICES), MODEL_SQUARE_VERTICES, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -214,7 +215,7 @@ main(int argc, char* argv[])
         glUseProgram(prog);
         glUniform1f(uniform_angle, angle);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(SQUARE) / sizeof(*SQUARE) / 2);
+        glDrawArrays(GL_TRIANGLES, 0, MODEL_SQUARE_COUNT);
         glBindVertexArray(0);
         glUseProgram(0);
 
