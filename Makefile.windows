@@ -61,20 +61,23 @@ resource_headers =         \
   res/textures/pipe.h
 
 # Express dependencies between header and resource files
-res/models/square.h: res/models/square.obj venv
-res/shaders/bg_frag.h: res/shaders/bg_frag.glsl venv
-res/shaders/bg_vert.h: res/shaders/bg_vert.glsl venv
-res/shaders/bird_frag.h: res/shaders/bird_frag.glsl venv
-res/shaders/bird_vert.h: res/shaders/bird_vert.glsl venv
-res/shaders/demo_frag.h: res/shaders/demo_frag.glsl venv
-res/shaders/demo_vert.h: res/shaders/demo_vert.glsl venv
-res/shaders/fade_frag.h: res/shaders/fade_frag.glsl venv
-res/shaders/fade_vert.h: res/shaders/fade_vert.glsl venv
-res/shaders/pipe_frag.h: res/shaders/pipe_frag.glsl venv
-res/shaders/pipe_vert.h: res/shaders/pipe_vert.glsl venv
-res/textures/bg.h: res/textures/bg.jpeg venv
-res/textures/bird.h: res/textures/bird.png venv
-res/textures/pipe.h: res/textures/pipe.png venv
+res/models/square.h: res/models/square.obj
+res/shaders/bg_frag.h: res/shaders/bg_frag.glsl
+res/shaders/bg_vert.h: res/shaders/bg_vert.glsl
+res/shaders/bird_frag.h: res/shaders/bird_frag.glsl
+res/shaders/bird_vert.h: res/shaders/bird_vert.glsl
+res/shaders/demo_frag.h: res/shaders/demo_frag.glsl
+res/shaders/demo_vert.h: res/shaders/demo_vert.glsl
+res/shaders/fade_frag.h: res/shaders/fade_frag.glsl
+res/shaders/fade_vert.h: res/shaders/fade_vert.glsl
+res/shaders/pipe_frag.h: res/shaders/pipe_frag.glsl
+res/shaders/pipe_vert.h: res/shaders/pipe_vert.glsl
+res/textures/bg.h: res/textures/bg.jpeg
+res/textures/bird.h: res/textures/bird.png
+res/textures/pipe.h: res/textures/pipe.png
+
+# Resource conversion requires some Python packages
+$(resource_headers): venv
 
 
 # Compile and link the main executable
@@ -88,7 +91,7 @@ venv:
 	@echo "VENV    venv/"
 	@python3 -m venv venv/
 	@./venv/bin/pip install -Uq wheel
-	@echo "REQS    scripts/requirements.txt"
+	@echo "DEPS    scripts/requirements.txt"
 	@./venv/bin/pip install -Uq -r scripts/requirements.txt
 
 # Double suffix rules for convertion resource files to header files
