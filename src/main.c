@@ -20,6 +20,7 @@
 #define M_PI 3.141592653589793
 #endif
 
+
 static void
 print_usage(const char* arg0)
 {
@@ -36,60 +37,6 @@ static void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
-}
-
-static bool
-opengl_shader_compile_source(GLuint shader, const GLchar* source)
-{
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (success != GL_TRUE) {
-        GLint info_log_length;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_log_length);
-
-        GLchar* info_log = malloc(info_log_length);
-        glGetShaderInfoLog(shader, info_log_length, NULL, info_log);
-
-        fprintf(stderr, "failed to compile shader:\n%s\n", info_log);
-        free(info_log);
-
-        return false;
-    }
-
-    return true;
-}
-
-static bool
-opengl_shader_link_program(GLuint program, GLuint vertex_shader, GLuint fragment_shader)
-{
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-
-    GLint success;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (success != GL_TRUE) {
-        GLint info_log_length;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
-
-        GLchar* info_log = malloc(info_log_length);
-        glGetProgramInfoLog(program, info_log_length, NULL, info_log);
-
-        fprintf(stderr, "failed to link program:\n%s\n", info_log);
-        free(info_log);
-
-        glDetachShader(program, vertex_shader);
-        glDetachShader(program, fragment_shader);
-
-        return false;
-    }
-
-    glDetachShader(program, vertex_shader);
-    glDetachShader(program, fragment_shader);
-    return false;
 }
 
 int
@@ -156,21 +103,19 @@ main(int argc, char* argv[])
     // Load the modern OpenGL funcs
     opengl_load_functions();
 
+    // Print some debug OpenGL info
     printf("OpenGL Vendor:   %s\n", glGetString(GL_VENDOR));
     printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
     printf("OpenGL Version:  %s\n", glGetString(GL_VERSION));
     printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+    // Call glViewport when window gets resized
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Do modern OpenGL stuff
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    opengl_shader_compile_source(vs, SHADER_DEMO_VERT_SOURCE);
-    opengl_shader_compile_source(fs, SHADER_DEMO_FRAG_SOURCE);
-
-    GLuint prog = glCreateProgram();
-    opengl_shader_link_program(prog, vs, fs);
+    int vs = shader_compile_source(SHADER_DEMO_VERT_TYPE, SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_VERT_LENGTH);
+    int fs = shader_compile_source(SHADER_DEMO_FRAG_TYPE, SHADER_DEMO_FRAG_SOURCE, SHADER_DEMO_FRAG_LENGTH);
+    int prog = shader_link_program(vs, fs);
 
     GLint uniform_angle = glGetUniformLocation(prog, "angle");
 

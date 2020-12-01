@@ -7,4 +7,7 @@ enum shader_type {
     SHADER_TYPE_FRAGMENT,
 };
 
+int shader_compile_source(int type, const char* source, long length);
+int shader_link_program(int vertex_shader, int fragment_shader);
+
 #endif
