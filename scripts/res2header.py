@@ -20,24 +20,28 @@ def grouper(iterable, n, fillvalue=None):
 def model2header(resource_file):
     name, ext = os.path.splitext(os.path.basename(resource_file))
     format = ''
-    vertices = []
 
+    vertices = []
     model = pywavefront.Wavefront(resource_file)
     for _, material in model.materials.items():
         format = material.vertex_format
         for vertex in material.vertices:
             vertices.append(vertex)
 
+    vertex_size = 0
     if format == 'V3F':
         format = 'MODEL_FORMAT_V3F'
+        vertex_size = 3
     elif format == 'N3F_V3F':
         format = 'MODEL_FORMAT_N3F_V3F'
+        vertex_size = 6
     elif format == 'T2F_N3F_V3F':
         format = 'MODEL_FORMAT_T2F_N3F_V3F'
+        vertex_size = 8
     else:
         raise SystemExit('Unknown model format: {}'.format(format))
 
-    count = len(vertices) // 3
+    count = len(vertices) // vertex_size
     guard = 'MODELS_{}_H_INCLUDED'.format(name.upper())
 
     s = io.StringIO()
@@ -51,7 +55,7 @@ def model2header(resource_file):
     s.write('static const int MODEL_{}_FORMAT = {};\n'.format(name.upper(), format))
     s.write('static const long MODEL_{}_COUNT = {};\n'.format(name.upper(), count))
     s.write('static const float MODEL_{}_VERTICES[] = {{\n'.format(name.upper()))
-    for group in grouper(vertices, 3):
+    for group in grouper(vertices, vertex_size):
         group = list(group)
         while None in group:
             group.remove(None)
@@ -66,14 +70,6 @@ def model2header(resource_file):
 
 def shader2header(resource_file):
     name, ext = os.path.splitext(os.path.basename(resource_file))
-    type = ''
-    if '_vert' in name:
-        type = 'SHADER_TYPE_VERTEX'
-    elif '_frag' in name:
-        type = 'SHADER_TYPE_FRAGMENT'
-    else:
-        raise SystemExit('Unknown shader type: {}'.format(name))
-
     with open(resource_file) as f:
         source = f.read()
 
@@ -87,8 +83,6 @@ def shader2header(resource_file):
     s.write('\n')
     s.write('#include "shader.h"\n')
     s.write('\n')
-    s.write('static const int SHADER_{}_TYPE = {};\n'.format(name.upper(), type))
-    s.write('static const long SHADER_{}_LENGTH = {};\n'.format(name.upper(), len(source)))
     s.write('static const char SHADER_{}_SOURCE[] = \n'.format(name.upper()))
     for line in source.splitlines():
         s.write('    "{}\\n"\n'.format(line))

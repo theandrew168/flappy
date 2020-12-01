@@ -9,22 +9,10 @@ enum {
     INFO_LOG_SIZE = 1024,
 };
 
-int
-shader_compile_source(int type, const char* source, long length)
+static bool
+shader_compile_source(int shader, const char* source)
 {
-    assert(source != NULL);
-
-    if (type == SHADER_TYPE_VERTEX) {
-        type = GL_VERTEX_SHADER;
-    } else if (type == SHADER_TYPE_FRAGMENT) {
-        type = GL_FRAGMENT_SHADER;
-    } else {
-        fprintf(stderr, "invalid shader type: %d\n", type);
-        return 0;
-    }
-
-    int shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, (const int*)&length);
+    glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
 
     int success;
@@ -33,17 +21,16 @@ shader_compile_source(int type, const char* source, long length)
         char info_log[INFO_LOG_SIZE] = { 0 };
         glGetShaderInfoLog(shader, INFO_LOG_SIZE, NULL, info_log);
 
-        fprintf(stderr, "failed to compile shader source:\n%s\n", info_log);
-        return 0;
+        fprintf(stderr, "failed to compile shader:\n%s\n", info_log);
+        return false;
     }
 
-    return shader;
+    return true;
 }
 
-int
-shader_link_program(int vertex_shader, int fragment_shader)
+static bool
+shader_link_program(int program, int vertex_shader, int fragment_shader)
 {
-    int program = glCreateProgram();
     glAttachShader(program, vertex_shader);
     glAttachShader(program, fragment_shader);
     glLinkProgram(program);
@@ -54,13 +41,34 @@ shader_link_program(int vertex_shader, int fragment_shader)
         char info_log[INFO_LOG_SIZE] = { 0 };
         glGetProgramInfoLog(program, INFO_LOG_SIZE, NULL, info_log);
 
-        fprintf(stderr, "failed to link shader program:\n%s\n", info_log);
         glDetachShader(program, vertex_shader);
         glDetachShader(program, fragment_shader);
-        return 0;
+
+        fprintf(stderr, "failed to link program:\n%s\n", info_log);
+        return false;
     }
 
     glDetachShader(program, vertex_shader);
     glDetachShader(program, fragment_shader);
-    return program;
+    return true;
+}
+
+int
+shader_compile_and_link(const char* vertex_source, const char* fragment_source)
+{
+    assert(vertex_source != NULL);
+    assert(fragment_source != NULL);
+
+    int vs = glCreateShader(GL_VERTEX_SHADER);
+    int fs = glCreateShader(GL_FRAGMENT_SHADER);
+    shader_compile_source(vs, vertex_source);
+    shader_compile_source(fs, fragment_source);
+
+    int prog = glCreateProgram();
+    shader_link_program(prog, vs, fs);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    return prog;
 }

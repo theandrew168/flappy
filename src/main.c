@@ -113,14 +113,8 @@ main(int argc, char* argv[])
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Do modern OpenGL stuff
-    int vs = shader_compile_source(SHADER_DEMO_VERT_TYPE, SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_VERT_LENGTH);
-    int fs = shader_compile_source(SHADER_DEMO_FRAG_TYPE, SHADER_DEMO_FRAG_SOURCE, SHADER_DEMO_FRAG_LENGTH);
-    int prog = shader_link_program(vs, fs);
-
-    GLint uniform_angle = glGetUniformLocation(prog, "angle");
-
-    glDeleteShader(fs);
-    glDeleteShader(vs);
+    int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
+    int uniform_angle = glGetUniformLocation(prog, "angle");
 
 
     GLuint vbo;
