@@ -21,14 +21,16 @@ default: flappy
 
 
 # Declare library sources
-libflappy_sources =    \
-  src/opengl.c         \
+libflappy_sources =  \
+  src/model.c        \
+  src/opengl.c       \
   src/shader.c
 libflappy_objects = $(libflappy_sources:.c=.o)
 
 # Express dependencies between object and source files
+src/model.o: src/model.c src/model.h src/opengl.h
 src/opengl.o: src/opengl.c src/opengl.h
-src/shader.o: src/shader.c src/shader.h
+src/shader.o: src/shader.c src/shader.h src/opengl.h
 
 # Build the static library
 libflappy.a: $(libflappy_objects)
