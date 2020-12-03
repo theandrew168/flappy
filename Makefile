@@ -2,14 +2,19 @@
 .POSIX:
 .SUFFIXES:
 
+# References:
+# https://www.glfw.org/docs/latest/build_guide.html
+# https://miniaud.io/docs/manual/index.html#Building
+
 
 # Declare compiler tools and flags
 CC      = cc
 CFLAGS  = -std=c99
-CFLAGS += -fPIC -g -Og -pthread
+CFLAGS += -pthread -g -Og
 CFLAGS += -DGLFW_INCLUDE_NONE
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
+CFLAGS += -Wno-implicit-fallthrough
 CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
 LDFLAGS = -pthread
 LDLIBS  = -ldl -lGL -lglfw -lm

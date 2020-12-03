@@ -2,19 +2,24 @@
 .POSIX:
 .SUFFIXES:
 
+# References:
+# https://www.glfw.org/docs/latest/build_guide.html
+# https://miniaud.io/docs/manual/index.html#Building
+
 
 # Declare compiler tools and flags
 CC      = x86_64-w64-mingw32-gcc
 CFLAGS  = -std=c99
-CFLAGS += -fPIC -g -Og
+CFLAGS += -g -Og
 CFLAGS += -D__USE_MINGW_ANSI_STDIO
 CFLAGS += -DGLFW_INCLUDE_NONE
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
+CFLAGS += -Wno-implicit-fallthrough
 CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
 LDFLAGS = -mwindows
-LDLIBS  = -lmingw32 -lgdi32 -lopengl32
-LDLIBS += vendor/lib64/windows/libglfw3.a
+LDLIBS  = -Lvendor/lib64/windows/ -lglfw3
+LDLIBS += -lmingw32 -lgdi32 -lopengl32
 
 
 # Declare which targets should be built by default

@@ -2,18 +2,24 @@
 .POSIX:
 .SUFFIXES:
 
+# References:
+# https://www.glfw.org/docs/latest/build_guide.html
+# https://miniaud.io/docs/manual/index.html#Building
+
 
 # Declare compiler tools and flags
 CC      = cc
 CFLAGS  = -std=c99
-CFLAGS += -fPIC -g -Og
+CFLAGS += -pthread -g -Og
 CFLAGS += -DGLFW_INCLUDE_NONE
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
+CFLAGS += -Wno-implicit-fallthrough
 CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
-LDFLAGS =
-LDLIBS  = -framework Cocoa -framework IOKit -framework OpenGL
-LDLIBS += vendor/lib64/macos/libglfw3.a
+LDFLAGS = -pthread
+LDLIBS  = -Lvendor/lib64/macos/ -lglfw3 -lm
+LDLIBS += -framework Cocoa -framework OpenGL -framework IOKit
+LDLIBS += -frameowrk CoreFoundation -framework CoreAudio -framework AudioUnit
 
 
 # Declare which targets should be built by default
