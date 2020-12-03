@@ -6,6 +6,7 @@ libflappy.so
 # Resource headers
 res/models/*.h
 res/shaders/*.h
+res/sounds/*.h
 res/textures/*.h
 
 # Python scripts

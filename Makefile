@@ -56,6 +56,7 @@ resource_headers =         \
   res/shaders/fade_vert.h  \
   res/shaders/pipe_frag.h  \
   res/shaders/pipe_vert.h  \
+  res/sounds/clink.h       \
   res/textures/bg.h        \
   res/textures/bird.h      \
   res/textures/pipe.h
@@ -72,6 +73,7 @@ res/shaders/fade_frag.h: res/shaders/fade_frag.glsl
 res/shaders/fade_vert.h: res/shaders/fade_vert.glsl
 res/shaders/pipe_frag.h: res/shaders/pipe_frag.glsl
 res/shaders/pipe_vert.h: res/shaders/pipe_vert.glsl
+res/sounds/clink.h: res/sounds/clink.wav
 res/textures/bg.h: res/textures/bg.jpeg
 res/textures/bird.h: res/textures/bird.png
 res/textures/pipe.h: res/textures/pipe.png
@@ -105,6 +107,11 @@ venv:
 	@echo "SHADER  $@"
 	@./venv/bin/python3 scripts/res2header.py $< $@
 
+.SUFFIXES: .wav .h
+.wav.h:
+	@echo "SOUND   $@"
+	@./venv/bin/python3 scripts/res2header.py $< $@
+
 .SUFFIXES: .bmp .h
 .bmp.h:
 	@echo "TEXTURE $@"
@@ -134,4 +141,4 @@ venv:
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr flappy *.exe *.a *.so *.dll src/*.o res/models/*.h res/shaders/*.h res/textures/*.h
+	rm -fr flappy *.exe *.a *.so *.dll src/*.o res/models/*.h res/shaders/*.h res/sounds/*.h res/textures/*.h
