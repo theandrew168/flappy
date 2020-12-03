@@ -32,6 +32,9 @@ def model2header(resource_file):
     if format == 'V3F':
         format = 'MODEL_FORMAT_V3F'
         vertex_size = 3
+    elif format == 'T2F_V3F':
+        format = 'MODEL_FORMAT_T2F_V3F'
+        vertex_size = 5
     elif format == 'N3F_V3F':
         format = 'MODEL_FORMAT_N3F_V3F'
         vertex_size = 6

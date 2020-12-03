@@ -14,7 +14,6 @@ CFLAGS += -pthread -g -Og
 CFLAGS += -DGLFW_INCLUDE_NONE
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
-CFLAGS += -Wno-implicit-fallthrough
 CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
 LDFLAGS = -pthread
 LDLIBS  = -ldl -lGL -lglfw -lm

@@ -5,7 +5,9 @@
 
 #include <GLFW/glfw3.h>
 
+#include "model.h"
 #include "opengl.h"
+#include "shader.h"
 
 #include "models/square.h"
 #include "shaders/bg_vert.h"
@@ -113,24 +115,11 @@ main(int argc, char* argv[])
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Do modern OpenGL stuff
-    int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
+    unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
     int uniform_angle = glGetUniformLocation(prog, "angle");
 
-
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(MODEL_SQUARE_VERTICES), MODEL_SQUARE_VERTICES, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    unsigned int vbo = model_buffer_create(MODEL_SQUARE_FORMAT, MODEL_SQUARE_COUNT, MODEL_SQUARE_VERTICES);
+    unsigned int vao = model_buffer_config(MODEL_SQUARE_FORMAT, vbo);
 
     long frame_count = 0;
     unsigned long last_frame = 0;

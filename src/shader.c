@@ -10,7 +10,7 @@ enum {
 };
 
 static bool
-shader_compile_source(int shader, const char* source)
+shader_compile_source(unsigned int shader, const char* source)
 {
     glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
@@ -29,7 +29,7 @@ shader_compile_source(int shader, const char* source)
 }
 
 static bool
-shader_link_program(int program, int vertex_shader, int fragment_shader)
+shader_link_program(unsigned int program, unsigned int vertex_shader, unsigned int fragment_shader)
 {
     glAttachShader(program, vertex_shader);
     glAttachShader(program, fragment_shader);
@@ -53,18 +53,18 @@ shader_link_program(int program, int vertex_shader, int fragment_shader)
     return true;
 }
 
-int
+unsigned int
 shader_compile_and_link(const char* vertex_source, const char* fragment_source)
 {
     assert(vertex_source != NULL);
     assert(fragment_source != NULL);
 
-    int vs = glCreateShader(GL_VERTEX_SHADER);
-    int fs = glCreateShader(GL_FRAGMENT_SHADER);
+    unsigned int vs = glCreateShader(GL_VERTEX_SHADER);
+    unsigned int fs = glCreateShader(GL_FRAGMENT_SHADER);
     shader_compile_source(vs, vertex_source);
     shader_compile_source(fs, fragment_source);
 
-    int prog = glCreateProgram();
+    unsigned int prog = glCreateProgram();
     shader_link_program(prog, vs, fs);
 
     glDeleteShader(vs);
