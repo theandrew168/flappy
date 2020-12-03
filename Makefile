@@ -6,13 +6,13 @@
 # Declare compiler tools and flags
 CC      = cc
 CFLAGS  = -std=c99
-CFLAGS += -fPIC -g -Og
+CFLAGS += -fPIC -g -Og -pthread
 CFLAGS += -DGLFW_INCLUDE_NONE
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
 CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
-LDFLAGS =
-LDLIBS  = -lGL -lglfw
+LDFLAGS = -pthread
+LDLIBS  = -ldl -lGL -lglfw -lm
 
 
 # Declare which targets should be built by default
