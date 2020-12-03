@@ -112,7 +112,7 @@ def sound2header(resource_file):
     s.write('#define {}\n'.format(guard))
     s.write('\n')
     s.write('static const char SOUND_{}_PATH[] = "{}";\n'.format(name.upper(), resource_file))
-    s.write('static const char SOUND_{}_DATA[] = {{\n'.format(name.upper()))
+    s.write('static const unsigned char SOUND_{}_DATA[] = {{\n'.format(name.upper()))
     for group in grouper(data, 16):
         group = list(group)
         while None in group:

@@ -14,10 +14,11 @@ uniform sampler2D tex;
 uniform int top;
 
 void main() {
+    vec2 tc = fs_in.tc;
 	if (top == 1) {
-		fs_in.tc.y = 1.0 - fs_in.tc.y;
+		tc.y = 1.0 - fs_in.tc.y;
 	}
-	color = texture(tex, fs_in.tc);
+	color = texture(tex, tc);
 	if (color.w < 1.0) {
 		discard;
 	}

@@ -8,12 +8,14 @@
 #include "model.h"
 #include "opengl.h"
 #include "shader.h"
+#include "texture.h"
 
-#include "models/square.h"
-#include "shaders/bg_vert.h"
-#include "shaders/bg_frag.h"
+#include "models/sprite.h"
 #include "shaders/demo_vert.h"
 #include "shaders/demo_frag.h"
+#include "sounds/clink.h"
+#include "sounds/death.h"
+#include "sounds/flap.h"
 #include "textures/bg.h"
 #include "textures/bird.h"
 #include "textures/pipe.h"
@@ -118,8 +120,8 @@ main(int argc, char* argv[])
     unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
     int uniform_angle = glGetUniformLocation(prog, "angle");
 
-    unsigned int vbo = model_buffer_create(MODEL_SQUARE_FORMAT, MODEL_SQUARE_COUNT, MODEL_SQUARE_VERTICES);
-    unsigned int vao = model_buffer_config(MODEL_SQUARE_FORMAT, vbo);
+    unsigned int vbo = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
+    unsigned int vao = model_buffer_config(MODEL_SPRITE_FORMAT, vbo);
 
     long frame_count = 0;
     unsigned long last_frame = 0;
@@ -143,7 +145,7 @@ main(int argc, char* argv[])
         glUseProgram(prog);
         glUniform1f(uniform_angle, angle);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, MODEL_SQUARE_COUNT);
+        glDrawArrays(GL_TRIANGLES, 0, MODEL_SPRITE_COUNT);
         glBindVertexArray(0);
         glUseProgram(0);
 

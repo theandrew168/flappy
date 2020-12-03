@@ -49,7 +49,7 @@ libflappy.a: $(libflappy_objects)
 
 # Declare required resource headers
 resource_headers =         \
-  res/models/square.h      \
+  res/models/sprite.h      \
   res/shaders/bg_frag.h    \
   res/shaders/bg_vert.h    \
   res/shaders/bird_frag.h  \
@@ -68,7 +68,7 @@ resource_headers =         \
   res/textures/pipe.h
 
 # Express dependencies between header and resource files
-res/models/square.h: res/models/square.obj
+res/models/sprite.h: res/models/sprite.obj
 res/shaders/bg_frag.h: res/shaders/bg_frag.glsl
 res/shaders/bg_vert.h: res/shaders/bg_vert.glsl
 res/shaders/bird_frag.h: res/shaders/bird_frag.glsl
