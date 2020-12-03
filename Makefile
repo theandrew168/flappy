@@ -57,6 +57,8 @@ resource_headers =         \
   res/shaders/pipe_frag.h  \
   res/shaders/pipe_vert.h  \
   res/sounds/clink.h       \
+  res/sounds/death.h       \
+  res/sounds/flap.h        \
   res/textures/bg.h        \
   res/textures/bird.h      \
   res/textures/pipe.h
@@ -74,6 +76,8 @@ res/shaders/fade_vert.h: res/shaders/fade_vert.glsl
 res/shaders/pipe_frag.h: res/shaders/pipe_frag.glsl
 res/shaders/pipe_vert.h: res/shaders/pipe_vert.glsl
 res/sounds/clink.h: res/sounds/clink.wav
+res/sounds/death.h: res/sounds/death.wav
+res/sounds/flap.h: res/sounds/flap.wav
 res/textures/bg.h: res/textures/bg.jpeg
 res/textures/bird.h: res/textures/bird.png
 res/textures/pipe.h: res/textures/pipe.png
