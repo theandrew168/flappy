@@ -18,6 +18,10 @@
     OPENGL_FUNCTION(glViewport, PFNGLVIEWPORTPROC)                                  \
     OPENGL_FUNCTION(glClear, PFNGLCLEARPROC)                                        \
     OPENGL_FUNCTION(glClearColor, PFNGLCLEARCOLORPROC)                              \
+    OPENGL_FUNCTION(glEnable, PFNGLENABLEPROC)                                      \
+    OPENGL_FUNCTION(glDepthFunc, PFNGLDEPTHFUNCPROC)                                \
+    OPENGL_FUNCTION(glCullFace, PFNGLCULLFACEPROC)                                  \
+    OPENGL_FUNCTION(glBlendFunc, PFNGLBLENDFUNCPROC)                                \
     OPENGL_FUNCTION(glDrawArrays, PFNGLDRAWARRAYSPROC)                              \
     OPENGL_FUNCTION(glCreateShader, PFNGLCREATESHADERPROC)                          \
     OPENGL_FUNCTION(glDeleteShader, PFNGLDELETESHADERPROC)                          \
@@ -52,6 +56,7 @@
     OPENGL_FUNCTION(glGenTextures, PFNGLGENTEXTURESPROC)                            \
     OPENGL_FUNCTION(glDeleteTextures, PFNGLDELETETEXTURESPROC)                      \
     OPENGL_FUNCTION(glBindTexture, PFNGLBINDTEXTUREPROC)                            \
+    OPENGL_FUNCTION(glActiveTexture, PFNGLACTIVETEXTUREPROC)                        \
     OPENGL_FUNCTION(glTexImage2D, PFNGLTEXIMAGE2DPROC)                              \
     OPENGL_FUNCTION(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)                      \
     OPENGL_FUNCTION(glTexParameteri, PFNGLTEXPARAMETERIPROC)

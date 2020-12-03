@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <GLFW/glfw3.h>
+#include <linmath/linmath.h>
 
 #include "model.h"
 #include "opengl.h"
@@ -117,8 +118,15 @@ main(int argc, char* argv[])
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Do modern OpenGL stuff
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
-    int uniform_angle = glGetUniformLocation(prog, "u_angle");
+    int u_transform = glGetUniformLocation(prog, "u_transform");
+    // manually set texture uniform location
+    glUseProgram(prog);
+    glUniform1i(glGetUniformLocation(prog, "u_texture"), 0);
+    glUseProgram(0);
 
     unsigned int vbo = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
     unsigned int vao = model_buffer_config(MODEL_SPRITE_FORMAT, vbo);
@@ -128,8 +136,10 @@ main(int argc, char* argv[])
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, TEXTURE_BIRD_PIXELS);
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -150,16 +160,28 @@ main(int argc, char* argv[])
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+        // clear the screen
+        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // bind the shader and update uniform value
         glUseProgram(prog);
+        mat4x4 m = { 0 };
+        mat4x4_identity(m);
+        mat4x4_rotate_Z(m, m, angle);
+        glUniformMatrix4fv(u_transform, 1, GL_FALSE, (const float*)m);
+
+        // bind the texture
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex);
+
+        // bind the model and make the draw call
         glBindVertexArray(vao);
-        glUniform1f(uniform_angle, angle);
         glDrawArrays(GL_TRIANGLES, 0, MODEL_SPRITE_COUNT);
-        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // unbind everything
         glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
         glUseProgram(0);
 
         // glfwGetTime returns seconds, convert to milliseconds
