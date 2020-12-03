@@ -118,10 +118,21 @@ main(int argc, char* argv[])
 
     // Do modern OpenGL stuff
     unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
-    int uniform_angle = glGetUniformLocation(prog, "angle");
+    int uniform_angle = glGetUniformLocation(prog, "u_angle");
 
     unsigned int vbo = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
     unsigned int vao = model_buffer_config(MODEL_SPRITE_FORMAT, vbo);
+
+    unsigned int tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, TEXTURE_BIRD_PIXELS);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     long frame_count = 0;
     unsigned long last_frame = 0;
@@ -143,9 +154,11 @@ main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(prog);
-        glUniform1f(uniform_angle, angle);
+        glBindTexture(GL_TEXTURE_2D, tex);
         glBindVertexArray(vao);
+        glUniform1f(uniform_angle, angle);
         glDrawArrays(GL_TRIANGLES, 0, MODEL_SPRITE_COUNT);
+        glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
         glUseProgram(0);
 
@@ -172,6 +185,7 @@ main(int argc, char* argv[])
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteProgram(prog);
+    glDeleteTextures(1, &tex);
 
     // Cleanup GLFW3 resources
     glfwDestroyWindow(window);

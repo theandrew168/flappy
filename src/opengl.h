@@ -48,7 +48,13 @@
     OPENGL_FUNCTION(glBindVertexArray, PFNGLBINDVERTEXARRAYPROC)                    \
     OPENGL_FUNCTION(glVertexAttribPointer, PFNGLVERTEXATTRIBPOINTERPROC)            \
     OPENGL_FUNCTION(glEnableVertexAttribArray, PFNGLENABLEVERTEXATTRIBARRAYPROC)    \
-    OPENGL_FUNCTION(glDisableVertexAttribArray, PFNGLDISABLEVERTEXATTRIBARRAYPROC)
+    OPENGL_FUNCTION(glDisableVertexAttribArray, PFNGLDISABLEVERTEXATTRIBARRAYPROC)  \
+    OPENGL_FUNCTION(glGenTextures, PFNGLGENTEXTURESPROC)                            \
+    OPENGL_FUNCTION(glDeleteTextures, PFNGLDELETETEXTURESPROC)                      \
+    OPENGL_FUNCTION(glBindTexture, PFNGLBINDTEXTUREPROC)                            \
+    OPENGL_FUNCTION(glTexImage2D, PFNGLTEXIMAGE2DPROC)                              \
+    OPENGL_FUNCTION(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)                      \
+    OPENGL_FUNCTION(glTexParameteri, PFNGLTEXPARAMETERIPROC)
 
 // Declare an OpenGL function. Other translation units that require
 // calling OpenGL functions will link against these declarations.

@@ -128,7 +128,10 @@ def sound2header(resource_file):
 
 def texture2header(resource_file):
     name, ext = os.path.splitext(os.path.basename(resource_file))
+
+    # load image and flip vertically to accommodate OpenGL's texcoord system
     texture = Image.open(resource_file)
+    texture = texture.transpose(Image.FLIP_TOP_BOTTOM)
 
     row_size = 0
     format = texture.mode
