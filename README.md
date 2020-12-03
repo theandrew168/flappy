@@ -2,8 +2,8 @@
 Flappy Bird clone written in C using OpenGL
 
 ## Dependencies
-[GLFW3](https://www.glfw.org/) (zlib) - Multi-platform library for native OpenGL applications
-[miniaudio](https://miniaud.io/) (public domain) - Single file audio playback and capture library
+[GLFW3](https://www.glfw.org/) (zlib) - Multi-platform library for native OpenGL applications  
+[miniaudio](https://miniaud.io/) (public domain) - Single file audio playback and capture library  
 
 ## Building
 This project is built using POSIX-compatible [make](https://pubs.opengroup.org/onlinepubs/009695399/utilities/make.html).
