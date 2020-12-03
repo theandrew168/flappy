@@ -86,7 +86,7 @@ main(int argc, char* argv[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-    GLFWwindow* window = glfwCreateWindow(640, 640, "GLFW3 OpenGL Demo", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "GLFW3 OpenGL Demo", NULL, NULL);
     if (window == NULL) {
         const char* error = NULL;
         glfwGetError(&error);
@@ -122,7 +122,9 @@ main(int argc, char* argv[])
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
-    int u_transform = glGetUniformLocation(prog, "u_transform");
+    int u_layer = glGetUniformLocation(prog, "u_layer");
+    int u_model = glGetUniformLocation(prog, "u_model");
+    int u_projection = glGetUniformLocation(prog, "u_projection");
     // manually set texture uniform location
     glUseProgram(prog);
     glUniform1i(glGetUniformLocation(prog, "u_texture"), 0);
@@ -166,10 +168,20 @@ main(int argc, char* argv[])
 
         // bind the shader and update uniform value
         glUseProgram(prog);
+        glUniform1f(u_layer, 0.0f);
+
         mat4x4 m = { 0 };
         mat4x4_identity(m);
         mat4x4_rotate_Z(m, m, angle);
-        glUniformMatrix4fv(u_transform, 1, GL_FALSE, (const float*)m);
+        glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
+
+        mat4x4 p = { 0 };
+        mat4x4_identity(p);
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        float aspect = (float)width/height;
+        mat4x4_ortho(p, -aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
+        glUniformMatrix4fv(u_projection, 1, GL_FALSE, (const float*)p);
 
         // bind the texture
         glActiveTexture(GL_TEXTURE0);
