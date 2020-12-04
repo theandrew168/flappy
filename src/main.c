@@ -14,7 +14,6 @@
 #include "models/sprite.h"
 #include "shaders/demo_vert.h"
 #include "shaders/demo_frag.h"
-#include "sounds/clink.h"
 #include "sounds/death.h"
 #include "sounds/flap.h"
 #include "textures/bg.h"
@@ -38,12 +37,6 @@ print_usage(const char* arg0)
     printf("  -v --vsync       enable vsync\n");
 }
 
-static void
-framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
 int
 main(int argc, char* argv[])
 {
@@ -51,6 +44,7 @@ main(int argc, char* argv[])
     bool resizable = false;
     bool vsync = false;
 
+    // process CLI args and update corresponding flags
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage(argv[0]);
@@ -82,10 +76,12 @@ main(int argc, char* argv[])
 
     glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
 
+    // ask for an OpenGL 3.3 Core profile
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+
     GLFWwindow* window = glfwCreateWindow(1280, 720, "GLFW3 OpenGL Demo", NULL, NULL);
     if (window == NULL) {
         const char* error = NULL;
@@ -96,59 +92,56 @@ main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    // Enable sticky keys
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
-
-    // Make the OpenGL context current
     glfwMakeContextCurrent(window);
-
-    // Enable v-sync (set 1 to enable, 0 to disable)
     glfwSwapInterval(vsync ? 1 : 0);
-
-    // Load the modern OpenGL funcs
     opengl_load_functions();
 
-    // Print some debug OpenGL info
     printf("OpenGL Vendor:   %s\n", glGetString(GL_VENDOR));
     printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
     printf("OpenGL Version:  %s\n", glGetString(GL_VERSION));
     printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    // Call glViewport when window gets resized
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    // Do modern OpenGL stuff
+    // enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // create shader for rendering sprites
     unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
     int u_layer = glGetUniformLocation(prog, "u_layer");
     int u_model = glGetUniformLocation(prog, "u_model");
     int u_projection = glGetUniformLocation(prog, "u_projection");
+
     // manually set texture uniform location
     glUseProgram(prog);
     glUniform1i(glGetUniformLocation(prog, "u_texture"), 0);
     glUseProgram(0);
 
+    // create model for rendering sprites
     unsigned int vbo = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
     unsigned int vao = model_buffer_config(MODEL_SPRITE_FORMAT, vbo);
-    unsigned int tex = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
 
+    // create sprite textures
+    unsigned int bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
+    unsigned int bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
+    unsigned int pipe = texture_create(TEXTURE_PIPE_FORMAT, TEXTURE_PIPE_WIDTH, TEXTURE_PIPE_HEIGHT, TEXTURE_PIPE_PIXELS);
+
+    // bookkeeping vars
     long frame_count = 0;
     unsigned long last_frame = 0;
     unsigned long last_second = 0;
     double angle = 0.0;
 
-    // Set the OpenGL viewport size
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    glViewport(0, 0, width, height);
-
-    // Loop til exit or ESCAPE key
+    // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
+
+        // check window size and set viewport every frame (is this bad?)
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
 
         // clear the screen
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
@@ -158,22 +151,22 @@ main(int argc, char* argv[])
         glUseProgram(prog);
         glUniform1f(u_layer, 0.0f);
 
+        // setup model matrix
         mat4x4 m = { 0 };
         mat4x4_identity(m);
         mat4x4_rotate_Z(m, m, angle);
         glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
 
+        // setup perspective matrix
         mat4x4 p = { 0 };
         mat4x4_identity(p);
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
         float aspect = (float)width/height;
         mat4x4_ortho(p, -aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
         glUniformMatrix4fv(u_projection, 1, GL_FALSE, (const float*)p);
 
         // bind the texture
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tex);
+        glBindTexture(GL_TEXTURE_2D, bird);
 
         // bind the model and make the draw call
         glBindVertexArray(vao);
@@ -207,7 +200,9 @@ main(int argc, char* argv[])
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteProgram(prog);
-    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &bg);
+    glDeleteTextures(1, &bird);
+    glDeleteTextures(1, &pipe);
 
     // Cleanup GLFW3 resources
     glfwDestroyWindow(window);
