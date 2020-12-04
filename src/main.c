@@ -171,9 +171,10 @@ main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, 0);
         glUseProgram(0);
 
+        // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         double now = glfwGetTime();
         if (now - last_second >= 1.0) {
-            printf("FPS: %ld\n", frame_count);
+            printf("FPS: %ld  (%lf ms/frame)\n", frame_count, 1000.0/frame_count);
             frame_count = 0;
             last_second += 1.0;
         }
