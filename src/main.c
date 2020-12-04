@@ -159,10 +159,20 @@ main(int argc, char* argv[])
     double last_second = glfwGetTime();
     long frame_count = 0;
 
+    float bird_pos = 0.0f;
+    float bird_delta = 0.0f;
+
     // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+
+        bird_pos -= bird_delta / 8.0f;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            bird_delta = -0.15f;
+        } else {
+            bird_delta += 0.01f;
         }
 
         // check window size and set viewport every frame (is this bad?)
@@ -195,9 +205,15 @@ main(int argc, char* argv[])
         draw_sprite(u_model, texture_bg, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
         draw_sprite(u_model, texture_bg, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
         draw_sprite(u_model, texture_bg, 1.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_pipe_top, 0.0f, 0.7f, 0.1f, 0.0f, 0.1f, 0.5f);
-        draw_sprite(u_model, texture_pipe_bot, 0.0f, -0.7f, 0.1f, 0.0f, 0.1f, 0.5f);
-        draw_sprite(u_model, texture_bird, sin(glfwGetTime()), cos(glfwGetTime())/2.0, 0.2f, glfwGetTime()*180.0/M_PI, 0.1f, 0.1f);
+
+        draw_sprite(u_model, texture_pipe_top, -0.8f, 1.0f, 0.1f, 0.0f, 0.1f, 0.75f);
+        draw_sprite(u_model, texture_pipe_bot, -0.8f, -1.4f, 0.1f, 0.0f, 0.1f, 0.75f);
+        draw_sprite(u_model, texture_pipe_top, 0.0f, 1.2f, 0.1f, 0.0f, 0.1f, 0.75f);
+        draw_sprite(u_model, texture_pipe_bot, 0.0f, -1.2f, 0.1f, 0.0f, 0.1f, 0.75f);
+        draw_sprite(u_model, texture_pipe_top, 0.8f, 0.8f, 0.1f, 0.0f, 0.1f, 0.75f);
+        draw_sprite(u_model, texture_pipe_bot, 0.8f, -1.6f, 0.1f, 0.0f, 0.1f, 0.75f);
+
+        draw_sprite(u_model, texture_bird, -1.0f, bird_pos, 0.2f, -bird_delta * 90.0f, 0.1f, 0.1f);
 
         // unbind everything
         glBindVertexArray(0);
