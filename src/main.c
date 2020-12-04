@@ -21,7 +21,8 @@
 #include "sounds/flap.h"
 #include "textures/bg.h"
 #include "textures/bird.h"
-#include "textures/pipe.h"
+#include "textures/pipe_bot.h"
+#include "textures/pipe_top.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653589793
@@ -151,7 +152,8 @@ main(int argc, char* argv[])
     // create sprite textures
     unsigned int texture_bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
     unsigned int texture_bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
-    unsigned int texture_pipe = texture_create(TEXTURE_PIPE_FORMAT, TEXTURE_PIPE_WIDTH, TEXTURE_PIPE_HEIGHT, TEXTURE_PIPE_PIXELS);
+    unsigned int texture_pipe_bot = texture_create(TEXTURE_PIPE_BOT_FORMAT, TEXTURE_PIPE_BOT_WIDTH, TEXTURE_PIPE_BOT_HEIGHT, TEXTURE_PIPE_BOT_PIXELS);
+    unsigned int texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
 
     // bookkeeping vars
     double last_second = glfwGetTime();
@@ -193,8 +195,8 @@ main(int argc, char* argv[])
         draw_sprite(u_model, texture_bg, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
         draw_sprite(u_model, texture_bg, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
         draw_sprite(u_model, texture_bg, 1.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_pipe, 0.0f, -0.7f, 0.1f, 0.0f, 0.1f, 0.5f);
-        draw_sprite(u_model, texture_pipe, 0.0f, 0.7f, 0.1f, 180.0f, 0.1f, 0.5f);
+        draw_sprite(u_model, texture_pipe_top, 0.0f, 0.7f, 0.1f, 0.0f, 0.1f, 0.5f);
+        draw_sprite(u_model, texture_pipe_bot, 0.0f, -0.7f, 0.1f, 0.0f, 0.1f, 0.5f);
         draw_sprite(u_model, texture_bird, sin(glfwGetTime()), cos(glfwGetTime())/2.0, 0.2f, glfwGetTime()*180.0/M_PI, 0.1f, 0.1f);
 
         // unbind everything
@@ -221,7 +223,8 @@ main(int argc, char* argv[])
     glDeleteProgram(shader_sprite);
     glDeleteTextures(1, &texture_bg);
     glDeleteTextures(1, &texture_bird);
-    glDeleteTextures(1, &texture_pipe);
+    glDeleteTextures(1, &texture_pipe_bot);
+    glDeleteTextures(1, &texture_pipe_top);
 
     // Cleanup GLFW3 resources
     glfwDestroyWindow(window);

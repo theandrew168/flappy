@@ -58,7 +58,8 @@ resource_headers =           \
   res/sounds/flap.h          \
   res/textures/bg.h          \
   res/textures/bird.h        \
-  res/textures/pipe.h
+  res/textures/pipe_bot.h    \
+  res/textures/pipe_top.h
 
 # Express dependencies between header and resource files
 res/models/sprite.h: res/models/sprite.obj
@@ -68,7 +69,8 @@ res/sounds/death.h: res/sounds/death.wav
 res/sounds/flap.h: res/sounds/flap.wav
 res/textures/bg.h: res/textures/bg.jpeg
 res/textures/bird.h: res/textures/bird.png
-res/textures/pipe.h: res/textures/pipe.png
+res/textures/pipe_bot.h: res/textures/pipe_bot.png
+res/textures/pipe_top.h: res/textures/pipe_top.png
 
 # Resource conversion requires some Python packages
 $(resource_headers): venv
