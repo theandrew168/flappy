@@ -127,10 +127,8 @@ main(int argc, char* argv[])
     unsigned int pipe = texture_create(TEXTURE_PIPE_FORMAT, TEXTURE_PIPE_WIDTH, TEXTURE_PIPE_HEIGHT, TEXTURE_PIPE_PIXELS);
 
     // bookkeeping vars
+    double last_second = 0.0;
     long frame_count = 0;
-    unsigned long last_frame = 0;
-    unsigned long last_second = 0;
-    double angle = 0.0;
 
     // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
@@ -154,7 +152,7 @@ main(int argc, char* argv[])
         // setup model matrix
         mat4x4 m = { 0 };
         mat4x4_identity(m);
-        mat4x4_rotate_Z(m, m, angle);
+        mat4x4_rotate_Z(m, m, glfwGetTime());
         glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
 
         // setup perspective matrix
@@ -177,15 +175,8 @@ main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, 0);
         glUseProgram(0);
 
-        // glfwGetTime returns seconds, convert to milliseconds
-        unsigned long now = (unsigned long)(glfwGetTime() * 1000.0);
-        unsigned long diff = now - last_frame;
-        last_frame = now;
-
-        angle += diff / 1000.0;
-        if (angle > 2 * M_PI) angle -= 2 * M_PI;
-
-        if (now - last_second >= 1000) {
+        double now = glfwGetTime();
+        if (now - last_second >= 1.0) {
             printf("FPS: %ld\n", frame_count);
             frame_count = 0;
             last_second = now;
