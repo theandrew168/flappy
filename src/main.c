@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <GLFW/glfw3.h>
 #include <linmath/linmath.h>
@@ -86,6 +87,8 @@ main(int argc, char* argv[])
         }
     }
 
+    srand(time(NULL));
+
     if (!glfwInit()) {
         const char* error = NULL;
         glfwGetError(&error);
@@ -159,6 +162,7 @@ main(int argc, char* argv[])
     double last_second = glfwGetTime();
     long frame_count = 0;
 
+    float bg_pos = 0.0f;
     float bird_pos = 0.0f;
     float bird_delta = 0.0f;
 
@@ -170,6 +174,7 @@ main(int argc, char* argv[])
 
         bird_pos -= bird_delta / 8.0f;
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            // TODO: play flap sound
             bird_delta = -0.15f;
         } else {
             bird_delta += 0.01f;
@@ -198,21 +203,27 @@ main(int argc, char* argv[])
         glBindVertexArray(model_sprite);
 
         // draw sprites (model, tex, x, y, z, r, sx, xy)
-        draw_sprite(u_model, texture_bg, -1.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_bg, -1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_bg, -0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_bg, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_bg, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_bg, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-        draw_sprite(u_model, texture_bg, 1.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
 
-        draw_sprite(u_model, texture_pipe_top, -0.8f, 1.0f, 0.1f, 0.0f, 0.1f, 0.75f);
-        draw_sprite(u_model, texture_pipe_bot, -0.8f, -1.4f, 0.1f, 0.0f, 0.1f, 0.75f);
-        draw_sprite(u_model, texture_pipe_top, 0.0f, 1.2f, 0.1f, 0.0f, 0.1f, 0.75f);
-        draw_sprite(u_model, texture_pipe_bot, 0.0f, -1.2f, 0.1f, 0.0f, 0.1f, 0.75f);
-        draw_sprite(u_model, texture_pipe_top, 0.8f, 0.8f, 0.1f, 0.0f, 0.1f, 0.75f);
-        draw_sprite(u_model, texture_pipe_bot, 0.8f, -1.6f, 0.1f, 0.0f, 0.1f, 0.75f);
+        // draw background
+        double bg_scroll = glfwGetTime() / 5.0;
+        for (float x = -5.0f; x <= 5.0f; x += 0.5f) {
+            double offset = fmod(bg_scroll, 0.5);
+            draw_sprite(u_model, texture_bg, x - offset, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        }
 
+        // draw pipes
+        double pipe_scroll = glfwGetTime() / 4.0;
+        for (float x = -6.4f; x <= 6.4f; x += 0.8f) {
+            double gap = (double)rand() / RAND_MAX;
+            gap = (gap -1.0) / 2.0;  // between -0.5 and 0.5
+            double top = gap + 1.2;
+            double bot = gap - 1.2;
+            double offset = fmod(pipe_scroll, 0.8);
+            draw_sprite(u_model, texture_pipe_top, x - offset, top, 0.1f, 0.0f, 0.1f, 0.75f);
+            draw_sprite(u_model, texture_pipe_bot, x - offset, bot, 0.1f, 0.0f, 0.1f, 0.75f);
+        }
+
+        // draw bird
         draw_sprite(u_model, texture_bird, -1.0f, bird_pos, 0.2f, -bird_delta * 90.0f, 0.1f, 0.1f);
 
         // unbind everything
