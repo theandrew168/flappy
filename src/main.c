@@ -23,6 +23,10 @@
 #include "textures/bird.h"
 #include "textures/pipe.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653589793
+#endif
+
 
 static void
 print_usage(const char* arg0)
@@ -40,13 +44,13 @@ print_usage(const char* arg0)
 // * has a fixed shader with 2 uniforms: mat4 model, mat4 projection
 // * has a fixed unit [-1,1] model with format: T2F_V3F
 static void
-draw_sprite(int u_model, unsigned texture, float x, float y, float z, float rotate, float scale)
+draw_sprite(int u_model, unsigned texture, float x, float y, float z, float rotate, float scale_x, float scale_y)
 {
     // setup model matrix
     mat4x4 m = { 0 };
     mat4x4_translate(m, x, y, z);
-    mat4x4_rotate_Z(m, m, rotate);
-    mat4x4_scale_aniso(m, m, scale, scale, 1.0f);
+    mat4x4_rotate_Z(m, m, rotate*(M_PI/180.0));
+    mat4x4_scale_aniso(m, m, scale_x, scale_y, 1.0f);
     glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
 
     // bind the texture
@@ -126,6 +130,10 @@ main(int argc, char* argv[])
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // enable depth testing (to simulate layers in 2D space)
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
     // create shader for rendering sprites
     unsigned int shader_sprite = shader_compile_and_link(SHADER_SPRITE_VERT_SOURCE, SHADER_SPRITE_FRAG_SOURCE);
     int u_model = glGetUniformLocation(shader_sprite, "u_model");
@@ -162,7 +170,7 @@ main(int argc, char* argv[])
 
         // clear the screen
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind the shader and update uniform value
         glUseProgram(shader_sprite);
@@ -177,8 +185,17 @@ main(int argc, char* argv[])
         // bind the model and make the draw call
         glBindVertexArray(model_sprite);
 
-        // draw sprites
-        draw_sprite(u_model, texture_bird, sin(glfwGetTime()), cos(glfwGetTime())/2.0, 0.0f, glfwGetTime(), 0.25f);
+        // draw sprites (model, tex, x, y, z, r, sx, xy)
+        draw_sprite(u_model, texture_bg, -1.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_bg, -1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_bg, -0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_bg, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_bg, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_bg, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_bg, 1.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        draw_sprite(u_model, texture_pipe, 0.0f, -0.7f, 0.1f, 0.0f, 0.1f, 0.5f);
+        draw_sprite(u_model, texture_pipe, 0.0f, 0.7f, 0.1f, 180.0f, 0.1f, 0.5f);
+        draw_sprite(u_model, texture_bird, sin(glfwGetTime()), cos(glfwGetTime())/2.0, 0.2f, glfwGetTime()*180.0/M_PI, 0.1f, 0.1f);
 
         // unbind everything
         glBindVertexArray(0);
