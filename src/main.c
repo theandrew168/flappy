@@ -123,7 +123,7 @@ main(int argc, char* argv[])
     unsigned int pipe = texture_create(TEXTURE_PIPE_FORMAT, TEXTURE_PIPE_WIDTH, TEXTURE_PIPE_HEIGHT, TEXTURE_PIPE_PIXELS);
 
     // bookkeeping vars
-    double last_second = 0.0;
+    double last_second = glfwGetTime();
     long frame_count = 0;
 
     // loop til exit or ESCAPE key
@@ -175,7 +175,7 @@ main(int argc, char* argv[])
         if (now - last_second >= 1.0) {
             printf("FPS: %ld\n", frame_count);
             frame_count = 0;
-            last_second = now;
+            last_second += 1.0;
         }
 
         frame_count++;
