@@ -52,38 +52,20 @@ libflappy.a: $(libflappy_objects)
 
 
 # Declare required resource headers
-resource_headers =         \
-  res/models/sprite.h      \
-  res/shaders/bg_frag.h    \
-  res/shaders/bg_vert.h    \
-  res/shaders/bird_frag.h  \
-  res/shaders/bird_vert.h  \
-  res/shaders/demo_frag.h  \
-  res/shaders/demo_vert.h  \
-  res/shaders/fade_frag.h  \
-  res/shaders/fade_vert.h  \
-  res/shaders/pipe_frag.h  \
-  res/shaders/pipe_vert.h  \
-  res/sounds/clink.h       \
-  res/sounds/death.h       \
-  res/sounds/flap.h        \
-  res/textures/bg.h        \
-  res/textures/bird.h      \
+resource_headers =           \
+  res/models/sprite.h        \
+  res/shaders/sprite_frag.h  \
+  res/shaders/sprite_vert.h  \
+  res/sounds/death.h         \
+  res/sounds/flap.h          \
+  res/textures/bg.h          \
+  res/textures/bird.h        \
   res/textures/pipe.h
 
 # Express dependencies between header and resource files
 res/models/sprite.h: res/models/sprite.obj
-res/shaders/bg_frag.h: res/shaders/bg_frag.glsl
-res/shaders/bg_vert.h: res/shaders/bg_vert.glsl
-res/shaders/bird_frag.h: res/shaders/bird_frag.glsl
-res/shaders/bird_vert.h: res/shaders/bird_vert.glsl
-res/shaders/demo_frag.h: res/shaders/demo_frag.glsl
-res/shaders/demo_vert.h: res/shaders/demo_vert.glsl
-res/shaders/fade_frag.h: res/shaders/fade_frag.glsl
-res/shaders/fade_vert.h: res/shaders/fade_vert.glsl
-res/shaders/pipe_frag.h: res/shaders/pipe_frag.glsl
-res/shaders/pipe_vert.h: res/shaders/pipe_vert.glsl
-res/sounds/clink.h: res/sounds/clink.wav
+res/shaders/sprite_frag.h: res/shaders/sprite_frag.glsl
+res/shaders/sprite_vert.h: res/shaders/sprite_vert.glsl
 res/sounds/death.h: res/sounds/death.wav
 res/sounds/flap.h: res/sounds/flap.wav
 res/textures/bg.h: res/textures/bg.jpeg

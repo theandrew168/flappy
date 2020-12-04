@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +13,10 @@
 #include "shader.h"
 #include "texture.h"
 
+// game resources
 #include "models/sprite.h"
-#include "shaders/demo_vert.h"
-#include "shaders/demo_frag.h"
+#include "shaders/sprite_vert.h"
+#include "shaders/sprite_frag.h"
 #include "sounds/death.h"
 #include "sounds/flap.h"
 #include "textures/bg.h"
@@ -31,6 +34,27 @@ print_usage(const char* arg0)
     printf("  -f --fullscreen  fullscreen window\n");
     printf("  -r --resizable   resizable window\n");
     printf("  -v --vsync       enable vsync\n");
+}
+
+// sprite drawing:
+// * has a fixed shader with 2 uniforms: mat4 model, mat4 projection
+// * has a fixed unit [-1,1] model with format: T2F_V3F
+static void
+draw_sprite(int u_model, unsigned texture, float x, float y, float z, float rotate, float scale)
+{
+    // setup model matrix
+    mat4x4 m = { 0 };
+    mat4x4_translate(m, x, y, z);
+    mat4x4_rotate_Z(m, m, rotate);
+    mat4x4_scale_aniso(m, m, scale, scale, 1.0f);
+    glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
+
+    // bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // bind the model and make the draw call
+    glDrawArrays(GL_TRIANGLES, 0, MODEL_SPRITE_COUNT);  // TODO not pure
 }
 
 int
@@ -78,7 +102,7 @@ main(int argc, char* argv[])
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "GLFW3 OpenGL Demo", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Flappy Bird", NULL, NULL);
     if (window == NULL) {
         const char* error = NULL;
         glfwGetError(&error);
@@ -103,24 +127,23 @@ main(int argc, char* argv[])
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // create shader for rendering sprites
-    unsigned int prog = shader_compile_and_link(SHADER_DEMO_VERT_SOURCE, SHADER_DEMO_FRAG_SOURCE);
-    int u_layer = glGetUniformLocation(prog, "u_layer");
-    int u_model = glGetUniformLocation(prog, "u_model");
-    int u_projection = glGetUniformLocation(prog, "u_projection");
+    unsigned int shader_sprite = shader_compile_and_link(SHADER_SPRITE_VERT_SOURCE, SHADER_SPRITE_FRAG_SOURCE);
+    int u_model = glGetUniformLocation(shader_sprite, "u_model");
+    int u_projection = glGetUniformLocation(shader_sprite, "u_projection");
 
     // manually set texture uniform location
-    glUseProgram(prog);
-    glUniform1i(glGetUniformLocation(prog, "u_texture"), 0);
+    glUseProgram(shader_sprite);
+    glUniform1i(glGetUniformLocation(shader_sprite, "u_texture"), 0);
     glUseProgram(0);
 
     // create model for rendering sprites
-    unsigned int vbo = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
-    unsigned int vao = model_buffer_config(MODEL_SPRITE_FORMAT, vbo);
+    unsigned int buffer_sprite = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
+    unsigned int model_sprite = model_buffer_config(MODEL_SPRITE_FORMAT, buffer_sprite);
 
     // create sprite textures
-    unsigned int bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
-    unsigned int bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
-    unsigned int pipe = texture_create(TEXTURE_PIPE_FORMAT, TEXTURE_PIPE_WIDTH, TEXTURE_PIPE_HEIGHT, TEXTURE_PIPE_PIXELS);
+    unsigned int texture_bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
+    unsigned int texture_bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
+    unsigned int texture_pipe = texture_create(TEXTURE_PIPE_FORMAT, TEXTURE_PIPE_WIDTH, TEXTURE_PIPE_HEIGHT, TEXTURE_PIPE_PIXELS);
 
     // bookkeeping vars
     double last_second = glfwGetTime();
@@ -142,14 +165,7 @@ main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
         // bind the shader and update uniform value
-        glUseProgram(prog);
-        glUniform1f(u_layer, 0.0f);
-
-        // setup model matrix
-        mat4x4 m = { 0 };
-        mat4x4_identity(m);
-        mat4x4_rotate_Z(m, m, glfwGetTime());
-        glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
+        glUseProgram(shader_sprite);
 
         // setup perspective matrix
         mat4x4 p = { 0 };
@@ -158,13 +174,11 @@ main(int argc, char* argv[])
         mat4x4_ortho(p, -aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
         glUniformMatrix4fv(u_projection, 1, GL_FALSE, (const float*)p);
 
-        // bind the texture
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, bird);
-
         // bind the model and make the draw call
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, MODEL_SPRITE_COUNT);
+        glBindVertexArray(model_sprite);
+
+        // draw sprites
+        draw_sprite(u_model, texture_bird, sin(glfwGetTime()), cos(glfwGetTime())/2.0, 0.0f, glfwGetTime(), 0.25f);
 
         // unbind everything
         glBindVertexArray(0);
@@ -185,12 +199,12 @@ main(int argc, char* argv[])
     }
 
     // Cleanup OpenGL resources
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteProgram(prog);
-    glDeleteTextures(1, &bg);
-    glDeleteTextures(1, &bird);
-    glDeleteTextures(1, &pipe);
+    glDeleteVertexArrays(1, &model_sprite);
+    glDeleteBuffers(1, &buffer_sprite);
+    glDeleteProgram(shader_sprite);
+    glDeleteTextures(1, &texture_bg);
+    glDeleteTextures(1, &texture_bird);
+    glDeleteTextures(1, &texture_pipe);
 
     // Cleanup GLFW3 resources
     glfwDestroyWindow(window);
