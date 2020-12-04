@@ -132,19 +132,7 @@ main(int argc, char* argv[])
 
     unsigned int vbo = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
     unsigned int vao = model_buffer_config(MODEL_SPRITE_FORMAT, vbo);
-
-    unsigned int tex;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, TEXTURE_BIRD_PIXELS);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    unsigned int tex = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
 
     long frame_count = 0;
     unsigned long last_frame = 0;
