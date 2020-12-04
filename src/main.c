@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +30,9 @@
 #define M_PI 3.141592653589793
 #endif
 
+enum {
+    PIPE_COUNT = 512,
+};
 
 static void
 print_usage(const char* arg0)
@@ -162,7 +166,13 @@ main(int argc, char* argv[])
     double last_second = glfwGetTime();
     long frame_count = 0;
 
-    float bg_pos = 0.0f;
+    // fill pipes with floats between -0.5f and 0.5f
+    float pipes[PIPE_COUNT] = { 0.0f };
+    for (long i = 0; i < PIPE_COUNT; i++) {
+        pipes[i] = ((float)rand() / RAND_MAX) - 0.5f;
+        pipes[i] = pipes[i] / 1.5f;
+    }
+
     float bird_pos = 0.0f;
     float bird_delta = 0.0f;
 
@@ -206,21 +216,22 @@ main(int argc, char* argv[])
 
         // draw background
         double bg_scroll = glfwGetTime() / 5.0;
+        double bg_offset = fmod(bg_scroll, 0.5);
         for (float x = -5.0f; x <= 5.0f; x += 0.5f) {
-            double offset = fmod(bg_scroll, 0.5);
-            draw_sprite(u_model, texture_bg, x - offset, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+            draw_sprite(u_model, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
         }
 
         // draw pipes
         double pipe_scroll = glfwGetTime() / 4.0;
-        for (float x = -6.4f; x <= 6.4f; x += 0.8f) {
-            double gap = (double)rand() / RAND_MAX;
-            gap = (gap -1.0) / 2.0;  // between -0.5 and 0.5
-            double top = gap + 1.2;
-            double bot = gap - 1.2;
-            double offset = fmod(pipe_scroll, 0.8);
-            draw_sprite(u_model, texture_pipe_top, x - offset, top, 0.1f, 0.0f, 0.1f, 0.75f);
-            draw_sprite(u_model, texture_pipe_bot, x - offset, bot, 0.1f, 0.0f, 0.1f, 0.75f);
+        double pipe_offset = fmod(pipe_scroll, 0.8);
+        long pipe_index = pipe_scroll / 0.8;
+        for (float x = -6.4f; x < 6.4f; x += 0.8f) {
+            float gap = pipes[pipe_index % PIPE_COUNT];
+            float top = gap + 1.2f;
+            float bot = gap - 1.2f;
+            draw_sprite(u_model, texture_pipe_top, x - pipe_offset, top, 0.1f, 0.0f, 0.1f, 0.75f);
+            draw_sprite(u_model, texture_pipe_bot, x - pipe_offset, bot, 0.1f, 0.0f, 0.1f, 0.75f);
+            pipe_index++;
         }
 
         // draw bird
