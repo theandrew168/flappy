@@ -18,7 +18,7 @@ CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
 LDFLAGS = -pthread
 LDLIBS  = -Lvendor/lib64/macos/ -lglfw3 -lm
 LDLIBS += -framework Cocoa -framework OpenGL -framework IOKit
-LDLIBS += -frameowrk CoreFoundation -framework CoreAudio -framework AudioUnit
+LDLIBS += -framework CoreFoundation -framework CoreAudio -framework AudioUnit
 
 
 # Declare which targets should be built by default
