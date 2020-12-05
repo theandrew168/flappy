@@ -30,6 +30,8 @@
 #define M_PI 3.141592653589793
 #endif
 
+static const float TARGET_ASPECT = 1.777777f;
+
 enum {
     PIPE_COUNT = 512,
 };
@@ -191,12 +193,25 @@ main(int argc, char* argv[])
         }
 
         // check window size and set viewport every frame (is this bad?)
+        int x_offset = 0;
+        int y_offset = 0;
+
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
+
+        float aspect = (float)width / height;
+        if (aspect <= TARGET_ASPECT) {
+            y_offset = (height - (width / TARGET_ASPECT)) / 2;
+            height = width / TARGET_ASPECT;
+        } else {
+            x_offset = (width - (height * TARGET_ASPECT)) / 2;
+            width = height * TARGET_ASPECT;
+        }
+
+        glViewport(x_offset, y_offset, width, height);
 
         // clear the screen
-        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind the shader and update uniform value
@@ -205,7 +220,6 @@ main(int argc, char* argv[])
         // setup perspective matrix
         mat4x4 p = { 0 };
         mat4x4_identity(p);
-        float aspect = (float)width/height;
         mat4x4_ortho(p, -aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
         glUniformMatrix4fv(u_projection, 1, GL_FALSE, (const float*)p);
 
