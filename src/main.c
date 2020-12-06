@@ -166,15 +166,16 @@ main(int argc, char* argv[])
     double last_second = glfwGetTime();
     long frame_count = 0;
 
-    // fill pipes with floats between -0.5f and 0.5f
+    // fill pipes with floats [-0.5f, 0.5f] ish
     float pipes[PIPE_COUNT] = { 0.0f };
     for (long i = 0; i < PIPE_COUNT; i++) {
         pipes[i] = ((float)rand() / RAND_MAX) - 0.5f;
-        pipes[i] = pipes[i] / 1.5f;
+        pipes[i] = pipes[i] / 1.2f;
     }
 
     float bird_pos = 0.0f;
     float bird_delta = 0.0f;
+    float pipe_start = 0.8f;
 
     // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
@@ -182,13 +183,13 @@ main(int argc, char* argv[])
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        bird_pos -= bird_delta / 8.0f;
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            // TODO: play flap sound
-            bird_delta = -0.15f;
-        } else {
-            bird_delta += 0.01f;
-        }
+//        bird_pos -= bird_delta / 8.0f;
+//        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+//            // TODO: play flap sound
+//            bird_delta = -0.15f;
+//        } else {
+//            bird_delta += 0.01f;
+//        }
 
         // check window size and set viewport every frame (is this bad?)
         int width, height;
@@ -222,17 +223,26 @@ main(int argc, char* argv[])
         }
 
         // draw pipes
-        double pipe_scroll = glfwGetTime() / 4.0;
-        double pipe_offset = fmod(pipe_scroll, 0.8);
-        long pipe_index = pipe_scroll / 0.8;
-        for (float x = -6.4f; x < 6.4f; x += 0.8f) {
-            float gap = pipes[pipe_index % PIPE_COUNT];
+        for (float x = pipe_start; x < 6.4f; x += 0.8f) {
+            float gap = pipes[0];
             float top = gap + 1.2f;
             float bot = gap - 1.2f;
-            draw_sprite(u_model, texture_pipe_top, x - pipe_offset, top, 0.1f, 0.0f, 0.1f, 0.75f);
-            draw_sprite(u_model, texture_pipe_bot, x - pipe_offset, bot, 0.1f, 0.0f, 0.1f, 0.75f);
-            pipe_index++;
+            draw_sprite(u_model, texture_pipe_top, x, top, 0.1f, 0.0f, 0.1f, 0.75f);
+            draw_sprite(u_model, texture_pipe_bot, x, bot, 0.1f, 0.0f, 0.1f, 0.75f);
         }
+
+//        double pipe_scroll = glfwGetTime() / 4.0;
+//        double pipe_offset = fmod(pipe_scroll, 0.8);
+//        long pipe_index = pipe_scroll / 0.8;
+//        long pipe_collide_index = pipe_index + 7;
+//        for (float x = -6.4f; x < 6.4f; x += 0.8f) {
+//            float gap = pipes[pipe_index % PIPE_COUNT];
+//            float top = gap + 1.2f;
+//            float bot = gap - 1.2f;
+//            draw_sprite(u_model, texture_pipe_top, x - pipe_offset, top, 0.1f, 0.0f, 0.1f, 0.75f);
+//            draw_sprite(u_model, texture_pipe_bot, x - pipe_offset, bot, 0.1f, 0.0f, 0.1f, 0.75f);
+//            pipe_index++;
+//        }
 
         // draw bird
         draw_sprite(u_model, texture_bird, -1.0f, bird_pos, 0.2f, -bird_delta * 90.0f, 0.1f, 0.1f);
@@ -241,6 +251,9 @@ main(int argc, char* argv[])
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
         glUseProgram(0);
+
+        // check collision
+        //printf("pipe_index (%f): %ld\n", pipes[pipe_index+7], pipe_index+7);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         double now = glfwGetTime();

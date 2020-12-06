@@ -4,9 +4,13 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio/miniaudio.h>
 
-#include "sounds/clink.h"
+#include "sounds/flap.h"
 
-void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+// Compile via:
+// gcc -std=c99 -pthread -Ivendor/include/ -Ires/ sound.c -ldl -lm
+
+void
+data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
     ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
     if (pDecoder == NULL) {
@@ -18,25 +22,23 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
     (void)pInput;
 }
 
-int main(int argc, char** argv)
+int
+main(int argc, char* argv[])
 {
-    ma_result result;
     ma_decoder decoder;
-    ma_device_config deviceConfig;
-    ma_device device;
-
-    result = ma_decoder_init_memory_wav(SOUND_CLINK_DATA, sizeof(SOUND_CLINK_DATA), NULL, &decoder);
+    ma_result result = ma_decoder_init_memory_wav(SOUND_FLAP_DATA, sizeof(SOUND_FLAP_DATA), NULL, &decoder);
     if (result != MA_SUCCESS) {
         return -2;
     }
 
-    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
     deviceConfig.playback.format   = decoder.outputFormat;
     deviceConfig.playback.channels = decoder.outputChannels;
     deviceConfig.sampleRate        = decoder.outputSampleRate;
     deviceConfig.dataCallback      = data_callback;
     deviceConfig.pUserData         = &decoder;
 
+    ma_device device;
     if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
         printf("Failed to open playback device.\n");
         ma_decoder_uninit(&decoder);
@@ -49,6 +51,11 @@ int main(int argc, char** argv)
         ma_decoder_uninit(&decoder);
         return -4;
     }
+
+    printf("Press Enter to quit...");
+    getchar();
+
+    ma_decoder_seek_to_pcm_frame(&decoder, 0);
 
     printf("Press Enter to quit...");
     getchar();
