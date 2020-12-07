@@ -35,33 +35,17 @@ static const float WIDTH = 16.0f;
 static const float HEIGHT = 9.0f;
 static const float ASPECT = WIDTH / HEIGHT;
 
-struct point {
-    float x;
-    float y;
-};
-
-struct quad {
-    struct point p;
-    float w;
-    float h;
-};
-
-struct circle {
-    struct point p;
-    float r;
-};
-
-bool
-intersect_point_quad(struct point p, struct quad q)
+static bool
+intersect_point_quad(float px, float py, float qx, float qy, float qw, float qh)
 {
     // calculate edges of the quad
-    float left = q.p.x - (q.w / 2.0f);
-    float right = q.p.x + (q.w / 2.0f);
-    float bottom = q.p.y - (q.h / 2.0f);
-    float top = q.p.y + (q.h / 2.0f);
+    float left = qx - (qw / 2.0f);
+    float right = qx + (qw / 2.0f);
+    float bottom = qy - (qh / 2.0f);
+    float top = qy + (qh / 2.0f);
 
     // intersection if p lies within the quad
-    return p.x >= left && p.x <= right && p.y >= bottom && p.y <= top;
+    return px >= left && px <= right && py >= bottom && py <= top;
 }
 
 struct spriter {
@@ -107,14 +91,6 @@ spriter_draw(const struct spriter* spriter, unsigned t, float x, float y, float 
     glUseProgram(0);
 }
 
-struct bird {
-    struct point pos;
-    struct point vel;
-    unsigned int texture;
-    struct point scale;
-    float layer;
-};
-
 enum {
     PIPE_COUNT = 512,
 };
@@ -128,7 +104,6 @@ print_usage(const char* arg0)
     printf("Options:\n");
     printf("  -h --help        print this help\n");
     printf("  -f --fullscreen  fullscreen window\n");
-    printf("  -r --resizable   resizable window\n");
     printf("  -v --vsync       enable vsync\n");
 }
 
@@ -136,7 +111,6 @@ int
 main(int argc, char* argv[])
 {
     bool fullscreen = false;
-    bool resizable = false;
     bool vsync = false;
 
     // process CLI args and update corresponding flags
@@ -147,9 +121,6 @@ main(int argc, char* argv[])
         }
         if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fullscreen") == 0) {
             fullscreen = true;
-        }
-        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--resizable") == 0) {
-            resizable = true;
         }
         if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--vsync") == 0) {
             vsync = true;
@@ -166,7 +137,7 @@ main(int argc, char* argv[])
     }
 
     // TODO: how to fullscreen?
-    glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     // ask for an OpenGL 3.3 Core profile
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -230,22 +201,19 @@ main(int argc, char* argv[])
     unsigned int texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
 
     // game objects
-    struct point camera = { 0.0f, 0.0f };
+    float camera = -4.0f;
 
     float pipes[PIPE_COUNT] = { 0.0f };
     for (long i = 0; i < PIPE_COUNT; i++) {
         float gap = (float)rand() / RAND_MAX;
         gap -= 0.5f;
-        pipes[i] = gap;
+        pipes[i] = gap * 2.0f;
     }
 
-    struct bird bird = {
-        .pos = { 0.0f, 0.0f },
-        .vel = { 1.0f, 0.0f },
-        .texture = texture_bird,
-        .scale = { 0.5f, 0.5f },
-        .layer = 0.2f,
-    };
+    float bird_pos_x = -8.0f;
+    float bird_pos_y = 0.0f;
+    float bird_vel_x = 1.0f;
+    float bird_vel_y = 0.0f;
 
     // bookkeeping vars
     double last_second = glfwGetTime();
@@ -263,9 +231,10 @@ main(int argc, char* argv[])
         double delta = now - last_frame;
         last_frame = now;
 
-        bird.pos.x += (bird.vel.x * delta);
-        bird.pos.y += (bird.vel.y * delta);
-        camera.x += (bird.vel.x * delta);
+        // update bird and camera positions
+        bird_pos_x += (bird_vel_x * delta);
+        bird_pos_y += (bird_vel_y * delta);
+        camera += (bird_vel_x * delta);
 
         // RENDER
 
@@ -299,21 +268,20 @@ main(int argc, char* argv[])
             spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
         }
 
-        // draw pipes (every 4.0f units starting at 4.0f)
-        for (float x = -16.0f; x <= bird.pos.x + 16.0f; x += 4.0f) {
-            if (x < 4.0f) continue;
-            long pipe_index = (x - 4.0f) / 4.0f;
+        // draw pipes (every 4.0f units starting at 0.0f)
+        for (float x = camera - 8.0f; x <= camera + 12.0f; x += 4.0f) {
+            if (x < 0.0f) continue;
+            long pipe_index = x / 4.0f;
+            float pipe_x = pipe_index * 4.0f;
             float gap = pipes[pipe_index % PIPE_COUNT];
             float top = gap + 6.0f;
             float bot = gap - 6.0f;
-            spriter_draw(&spriter, texture_pipe_top, x - camera.x, top, 0.0f, 0.0f, 0.5f, 4.0f);
-            spriter_draw(&spriter, texture_pipe_bot, x - camera.x, bot, 0.0f, 0.0f, 0.5f, 4.0f);
+            spriter_draw(&spriter, texture_pipe_top, pipe_x - camera, top, 0.1f, 0.0f, 0.5f, 4.0f);
+            spriter_draw(&spriter, texture_pipe_bot, pipe_x - camera, bot, 0.1f, 0.0f, 0.5f, 4.0f);
         }
 
         // draw bird
-        spriter_draw(&spriter, texture_bird,
-            bird.pos.x - camera.x, bird.pos.y, bird.layer,
-            0.0f, bird.scale.x, bird.scale.y);
+        spriter_draw(&spriter, texture_bird, bird_pos_x - camera, bird_pos_y, 0.2f, 0.0f, 0.5f, 0.5f);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         frame_count++;
