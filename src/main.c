@@ -226,8 +226,11 @@ main(int argc, char* argv[])
     unsigned int texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
 
     // game objects
+    struct point camera = { 0.0f, 0.0f };
+
     struct bird bird = {
         .pos = { 0.0f, 0.0f },
+        .vel = { 1.0f, 0.0f },
         .texture = texture_bird,
         .scale = { 0.5f, 0.5f },
         .layer = 0.2f,
@@ -235,6 +238,7 @@ main(int argc, char* argv[])
 
     // bookkeeping vars
     double last_second = glfwGetTime();
+    double last_frame = last_second;
     long frame_count = 0;
 
     // loop til exit or ESCAPE key
@@ -242,6 +246,17 @@ main(int argc, char* argv[])
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
+
+        // UPDATE
+        double now = glfwGetTime();
+        double delta = now - last_frame;
+        last_frame = now;
+
+        bird.pos.x += (bird.vel.x * delta);
+        bird.pos.y += (bird.vel.y * delta);
+        camera.x += (bird.vel.x * delta);
+
+        // RENDER
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -266,18 +281,21 @@ main(int argc, char* argv[])
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // draw background
-        for (float x = -9.0f; x <= 9.0f; x += 4.5f) {
-            spriter_draw(&spriter, texture_bg, x, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
+        // draw background (scrolls independently of game objects)
+        double bg_scroll = glfwGetTime();
+        double bg_offset = fmod(bg_scroll, 4.5);
+        for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
+            spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
         }
 
         // draw bird
-        spriter_draw(&spriter, texture_bird, bird.pos.x, bird.pos.y, bird.layer, 0.0f, bird.scale.x, bird.scale.y);
+        spriter_draw(&spriter, texture_bird,
+            bird.pos.x - camera.x, bird.pos.y - camera.y, bird.layer,
+            0.0f, bird.scale.x, bird.scale.y);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
-        double now = glfwGetTime();
         frame_count++;
-        if (now - last_second >= 1.0) {
+        if (glfwGetTime() - last_second >= 1.0) {
             printf("FPS: %ld  (%lf ms/frame)\n", frame_count, 1000.0/frame_count);
             frame_count = 0;
             last_second += 1.0;
