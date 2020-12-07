@@ -30,9 +30,91 @@
 #define M_PI 3.141592653589793
 #endif
 
-enum {
-    PIPE_COUNT = 512,
+// game is designed for a 16:9 aspect ratio
+static const float WIDTH = 16.0f;
+static const float HEIGHT = 9.0f;
+static const float ASPECT = WIDTH / HEIGHT;
+
+struct point {
+    float x;
+    float y;
 };
+
+struct quad {
+    struct point p;
+    float w;
+    float h;
+};
+
+struct circle {
+    struct point p;
+    float r;
+};
+
+bool
+intersect_point_quad(struct point p, struct quad q)
+{
+    // calculate edges of the quad
+    float left = q.p.x - (q.w / 2.0f);
+    float right = q.p.x + (q.w / 2.0f);
+    float bottom = q.p.y - (q.h / 2.0f);
+    float top = q.p.y + (q.h / 2.0f);
+
+    // intersection if p lies within the quad
+    return p.x >= left && p.x <= right && p.y >= bottom && p.y <= top;
+}
+
+struct spriter {
+    unsigned int shader;
+    int uniform_model;
+    int uniform_projection;
+    unsigned int model;
+    long vertex_count;
+};
+
+static void
+spriter_draw(const struct spriter* spriter, unsigned t, float x, float y, float z, float r, float sx, float sy)
+{
+    // bind the shader
+    glUseProgram(spriter->shader);
+
+    // setup model matrix
+    mat4x4 m = { 0 };
+    mat4x4_translate(m, x, y, z);
+    mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));
+    mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
+    glUniformMatrix4fv(spriter->uniform_model, 1, GL_FALSE, (const float*)m);
+
+    // setup projection matrix
+    mat4x4 p = { 0 };
+    mat4x4_identity(p);
+    mat4x4_ortho(p, -(WIDTH / 2.0f), (WIDTH / 2.0f), -(HEIGHT / 2.0f), (HEIGHT / 2.0f), -1.0f, 1.0f);
+    glUniformMatrix4fv(spriter->uniform_projection, 1, GL_FALSE, (const float*)p);
+
+    // bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, t);
+
+    // bind the model
+    glBindVertexArray(spriter->model);
+
+    // draw the sprite!
+    glDrawArrays(GL_TRIANGLES, 0, spriter->vertex_count);
+
+    // unbind everything
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
+}
+
+struct bird {
+    struct point pos;
+    struct point vel;
+    unsigned int texture;
+    struct point scale;
+    float layer;
+};
+
 
 static void
 print_usage(const char* arg0)
@@ -44,27 +126,6 @@ print_usage(const char* arg0)
     printf("  -f --fullscreen  fullscreen window\n");
     printf("  -r --resizable   resizable window\n");
     printf("  -v --vsync       enable vsync\n");
-}
-
-// sprite drawing:
-// * has a fixed shader with 2 uniforms: mat4 model, mat4 projection
-// * has a fixed unit [-1,1] model with format: T2F_V3F
-static void
-draw_sprite(int u_model, unsigned texture, float x, float y, float z, float rotate, float scale_x, float scale_y)
-{
-    // setup model matrix
-    mat4x4 m = { 0 };
-    mat4x4_translate(m, x, y, z);
-    mat4x4_rotate_Z(m, m, rotate*(M_PI/180.0));
-    mat4x4_scale_aniso(m, m, scale_x, scale_y, 1.0f);
-    glUniformMatrix4fv(u_model, 1, GL_FALSE, (const float*)m);
-
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    // bind the model and make the draw call
-    glDrawArrays(GL_TRIANGLES, 0, MODEL_SPRITE_COUNT);  // TODO not pure
 }
 
 int
@@ -100,12 +161,7 @@ main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    // use "fake" fullscreen
-    if (fullscreen) {
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-        glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-    }
-
+    // TODO: how to fullscreen?
     glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
 
     // ask for an OpenGL 3.3 Core profile
@@ -134,11 +190,9 @@ main(int argc, char* argv[])
     printf("OpenGL Version:  %s\n", glGetString(GL_VERSION));
     printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    // enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // enable depth testing (to simulate layers in 2D space)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
@@ -147,7 +201,7 @@ main(int argc, char* argv[])
     int u_model = glGetUniformLocation(shader_sprite, "u_model");
     int u_projection = glGetUniformLocation(shader_sprite, "u_projection");
 
-    // manually set texture uniform location
+    // set texture uniform location
     glUseProgram(shader_sprite);
     glUniform1i(glGetUniformLocation(shader_sprite, "u_texture"), 0);
     glUseProgram(0);
@@ -156,26 +210,32 @@ main(int argc, char* argv[])
     unsigned int buffer_sprite = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
     unsigned int model_sprite = model_buffer_config(MODEL_SPRITE_FORMAT, buffer_sprite);
 
+    // collect spriter info
+    struct spriter spriter = {
+        .shader = shader_sprite,
+        .uniform_model = u_model,
+        .uniform_projection = u_projection,
+        .model = model_sprite,
+        .vertex_count = MODEL_SPRITE_COUNT,
+    };
+
     // create sprite textures
     unsigned int texture_bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
     unsigned int texture_bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
     unsigned int texture_pipe_bot = texture_create(TEXTURE_PIPE_BOT_FORMAT, TEXTURE_PIPE_BOT_WIDTH, TEXTURE_PIPE_BOT_HEIGHT, TEXTURE_PIPE_BOT_PIXELS);
     unsigned int texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
 
+    // game objects
+    struct bird bird = {
+        .pos = { 0.0f, 0.0f },
+        .texture = texture_bird,
+        .scale = { 0.5f, 0.5f },
+        .layer = 0.2f,
+    };
+
     // bookkeeping vars
     double last_second = glfwGetTime();
     long frame_count = 0;
-
-    // fill pipes with floats [-0.5f, 0.5f] ish
-    float pipes[PIPE_COUNT] = { 0.0f };
-    for (long i = 0; i < PIPE_COUNT; i++) {
-        pipes[i] = ((float)rand() / RAND_MAX) - 0.5f;
-        pipes[i] = pipes[i] / 1.2f;
-    }
-
-    float bird_pos = 0.0f;
-    float bird_delta = 0.0f;
-    float pipe_start = 0.8f;
 
     // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
@@ -183,77 +243,36 @@ main(int argc, char* argv[])
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-//        bird_pos -= bird_delta / 8.0f;
-//        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-//            // TODO: play flap sound
-//            bird_delta = -0.15f;
-//        } else {
-//            bird_delta += 0.01f;
-//        }
-
-        // check window size and set viewport every frame (is this bad?)
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
 
-        // clear the screen
-        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
+        // determine boxing and calculate centering offsets
+        long x_offset = 0;
+        long y_offset = 0;
+        float aspect = (float)width / height;
+        if (aspect <= ASPECT) {
+            // letterbox
+            y_offset = (height - (width / ASPECT)) / 2;
+            height = width / ASPECT;
+        } else {
+            // pillarbox
+            x_offset = (width - (height * ASPECT)) / 2;
+            width = height * ASPECT;
+        }
+
+        // set viewport every frame (is this bad?)
+        glViewport(x_offset, y_offset, width, height);
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // bind the shader and update uniform value
-        glUseProgram(shader_sprite);
-
-        // setup perspective matrix
-        mat4x4 p = { 0 };
-        mat4x4_identity(p);
-        float aspect = (float)width/height;
-        mat4x4_ortho(p, -aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
-        glUniformMatrix4fv(u_projection, 1, GL_FALSE, (const float*)p);
-
-        // bind the model and make the draw call
-        glBindVertexArray(model_sprite);
-
-        // draw sprites (model, tex, x, y, z, r, sx, xy)
-
         // draw background
-        double bg_scroll = glfwGetTime() / 5.0;
-        double bg_offset = fmod(bg_scroll, 0.5);
-        for (float x = -5.0f; x <= 5.0f; x += 0.5f) {
-            draw_sprite(u_model, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+        for (float x = -9.0f; x <= 9.0f; x += 4.5f) {
+            spriter_draw(&spriter, texture_bg, x, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
         }
-
-        // draw pipes
-        for (float x = pipe_start; x < 6.4f; x += 0.8f) {
-            float gap = pipes[0];
-            float top = gap + 1.2f;
-            float bot = gap - 1.2f;
-            draw_sprite(u_model, texture_pipe_top, x, top, 0.1f, 0.0f, 0.1f, 0.75f);
-            draw_sprite(u_model, texture_pipe_bot, x, bot, 0.1f, 0.0f, 0.1f, 0.75f);
-        }
-
-//        double pipe_scroll = glfwGetTime() / 4.0;
-//        double pipe_offset = fmod(pipe_scroll, 0.8);
-//        long pipe_index = pipe_scroll / 0.8;
-//        long pipe_collide_index = pipe_index + 7;
-//        for (float x = -6.4f; x < 6.4f; x += 0.8f) {
-//            float gap = pipes[pipe_index % PIPE_COUNT];
-//            float top = gap + 1.2f;
-//            float bot = gap - 1.2f;
-//            draw_sprite(u_model, texture_pipe_top, x - pipe_offset, top, 0.1f, 0.0f, 0.1f, 0.75f);
-//            draw_sprite(u_model, texture_pipe_bot, x - pipe_offset, bot, 0.1f, 0.0f, 0.1f, 0.75f);
-//            pipe_index++;
-//        }
 
         // draw bird
-        draw_sprite(u_model, texture_bird, -1.0f, bird_pos, 0.2f, -bird_delta * 90.0f, 0.1f, 0.1f);
-
-        // unbind everything
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glUseProgram(0);
-
-        // check collision
-        //printf("pipe_index (%f): %ld\n", pipes[pipe_index+7], pipe_index+7);
+        spriter_draw(&spriter, texture_bird, bird.pos.x, bird.pos.y, bird.layer, 0.0f, bird.scale.x, bird.scale.y);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         double now = glfwGetTime();
