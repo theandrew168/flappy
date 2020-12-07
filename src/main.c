@@ -145,7 +145,21 @@ main(int argc, char* argv[])
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Flappy Bird", NULL, NULL);
+    // set flags for monitor details
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+    GLFWwindow* window = NULL;
+    if (fullscreen) {
+        window = glfwCreateWindow(mode->width, mode->height, "Flappy Bird", monitor, NULL);
+    } else {
+        window = glfwCreateWindow(1280, 720, "Flappy Bird", NULL, NULL);
+    }
+
     if (window == NULL) {
         const char* error = NULL;
         glfwGetError(&error);
