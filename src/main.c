@@ -115,6 +115,10 @@ struct bird {
     float layer;
 };
 
+enum {
+    PIPE_COUNT = 512,
+};
+
 
 static void
 print_usage(const char* arg0)
@@ -228,6 +232,13 @@ main(int argc, char* argv[])
     // game objects
     struct point camera = { 0.0f, 0.0f };
 
+    float pipes[PIPE_COUNT] = { 0.0f };
+    for (long i = 0; i < PIPE_COUNT; i++) {
+        float gap = (float)rand() / RAND_MAX;
+        gap -= 0.5f;
+        pipes[i] = gap;
+    }
+
     struct bird bird = {
         .pos = { 0.0f, 0.0f },
         .vel = { 1.0f, 0.0f },
@@ -282,15 +293,26 @@ main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // draw background (scrolls independently of game objects)
-        double bg_scroll = glfwGetTime();
+        double bg_scroll = glfwGetTime() / 2.0f;
         double bg_offset = fmod(bg_scroll, 4.5);
         for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
             spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
         }
 
+        // draw pipes (every 4.0f units starting at 4.0f)
+        for (float x = -16.0f; x <= bird.pos.x + 16.0f; x += 4.0f) {
+            if (x < 4.0f) continue;
+            long pipe_index = (x - 4.0f) / 4.0f;
+            float gap = pipes[pipe_index % PIPE_COUNT];
+            float top = gap + 6.0f;
+            float bot = gap - 6.0f;
+            spriter_draw(&spriter, texture_pipe_top, x - camera.x, top, 0.0f, 0.0f, 0.5f, 4.0f);
+            spriter_draw(&spriter, texture_pipe_bot, x - camera.x, bot, 0.0f, 0.0f, 0.5f, 4.0f);
+        }
+
         // draw bird
         spriter_draw(&spriter, texture_bird,
-            bird.pos.x - camera.x, bird.pos.y - camera.y, bird.layer,
+            bird.pos.x - camera.x, bird.pos.y, bird.layer,
             0.0f, bird.scale.x, bird.scale.y);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
