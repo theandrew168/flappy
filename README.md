@@ -21,6 +21,7 @@ make
 ### macOS
 ```
 brew install make python3
+
 make LDLIBS='-Lvendor/lib64/macos/ -lglfw3 -lm  \
   -framework Cocoa -framework OpenGL -framework IOKit  \
   -framework CoreFoundation -framework CoreAudio -framework AudioUnit'
@@ -45,6 +46,7 @@ make  \
 From macOS:
 ```
 brew install make mingw-w64 python3
+
 make  \
   AR=x86_64-w64-mingw32-ar  \
   CC=x86_64-w64-mingw32-gcc  \
