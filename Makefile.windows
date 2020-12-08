@@ -8,6 +8,7 @@
 
 
 # Declare compiler tools and flags
+AR      = x86_64-w64-mingw32-ar
 CC      = x86_64-w64-mingw32-gcc
 CFLAGS  = -std=c99
 CFLAGS += -g -Og
@@ -17,8 +18,7 @@ CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
 CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
 LDFLAGS = -mwindows
-LDLIBS  = -Lvendor/lib64/windows/ -lglfw3
-LDLIBS += -lmingw32 -lgdi32 -lopengl32
+LDLIBS  = -Lvendor/lib64/windows/ -lgdi32 -lglfw3 -lopengl32
 
 
 # Declare which targets should be built by default

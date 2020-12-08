@@ -2,26 +2,29 @@
 .POSIX:
 .SUFFIXES:
 
-# References:
-# https://www.glfw.org/docs/latest/build_guide.html
-# https://miniaud.io/docs/manual/index.html#Building
-
+# CFLAGS breakout by category
+CFLAGS_VERSION = -std=c99
+CFLAGS_OPTIMIZATIONS = -g -Og
+CFLAGS_WARNINGS = -Wall -Wextra -Wpedantic
+CFLAGS_DEFINITIONS = -DGLFW_INCLUDE_NONE
+CFLAGS_INCLUDE_DIRS = -Ires/ -Isrc/ -Ivendor/include/
+CFLAGS_EXTRAS = -pthread
 
 # Declare compiler tools and flags
+AR      = ar
 CC      = cc
-CFLAGS  = -std=c99
-CFLAGS += -pthread -g -Og
-CFLAGS += -DGLFW_INCLUDE_NONE
-CFLAGS += -Wall -Wextra -Wpedantic
-CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
-CFLAGS += -Ires/ -Isrc/ -Ivendor/include/
+CFLAGS  = -fPIC
+CFLAGS += $(CFLAGS_VERSION)
+CFLAGS += $(CFLAGS_OPTIMIZATIONS)
+CFLAGS += $(CFLAGS_WARNINGS)
+CFLAGS += $(CFLAGS_DEFINITIONS)
+CFLAGS += $(CFLAGS_INCLUDE_DIRS)
+CFLAGS += $(CFLAGS_EXTRAS)
 LDFLAGS = -pthread
 LDLIBS  = -ldl -lGL -lglfw -lm
 
-
 # Declare which targets should be built by default
 default: flappy
-
 
 # Declare library sources
 libflappy_sources =  \
@@ -47,7 +50,6 @@ libflappy.a: $(libflappy_objects)
 .c.o:
 	@echo "CC      $@"
 	@$(CC) $(CFLAGS) -c -o $@ $<
-
 
 # Declare required resource headers
 resource_headers =           \
@@ -75,12 +77,10 @@ res/textures/pipe_top.h: res/textures/pipe_top.png
 # Resource conversion requires some Python packages
 $(resource_headers): venv
 
-
 # Compile and link the main executable
 flappy: src/main.c libflappy.a $(resource_headers)
 	@echo "EXE     $@"
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c libflappy.a $(LDLIBS)
-
 
 # Create the virtualenv for pre/post build scripts
 venv:
@@ -130,7 +130,6 @@ venv:
 .tga.h:
 	@echo "TEXTURE $@"
 	@./venv/bin/python3 scripts/res2header.py $< $@
-
 
 # Helper target that cleans up build artifacts
 .PHONY: clean

@@ -8,6 +8,7 @@
 
 
 # Declare compiler tools and flags
+AR      = ar
 CC      = cc
 CFLAGS  = -std=c99
 CFLAGS += -pthread -g -Og
