@@ -21,7 +21,10 @@ make
 ### macOS
 ```
 brew install make python3
-make -f Makefile.macos
+make  \
+  LDLIBS='-Lvendor/lib64/macos/ -lglfw3 -lm  \
+    -framework Cocoa -framework OpenGL -framework IOKit  \
+    -framework CoreFoundation -framework CoreAudio -framework AudioUnit'
 ```
 
 ### Windows
@@ -32,11 +35,21 @@ From Linux:
 # debian-based
 sudo apt install make mingw-w64 python3 python3-venv
 
-make -f Makefile.windows
+make  \
+  AR=x86_64-w64-mingw32-ar  \
+  CC=x86_64-w64-mingw32-gcc  \
+  CFLAGS_EXTRAS=-D__USE_MINGW_ANSI_STDIO  \
+  LDFLAGS=-mwindows  \
+  LDLIBS='-Lvendor/lib64/windows/ -lgdi32 -lglfw3 -lopengl32'
 ```
 
 From macOS:
 ```
 brew install make mingw-w64 python3
-make -f Makefile.windows
+make  \
+  AR=x86_64-w64-mingw32-ar  \
+  CC=x86_64-w64-mingw32-gcc  \
+  CFLAGS_EXTRAS=-D__USE_MINGW_ANSI_STDIO  \
+  LDFLAGS=-mwindows  \
+  LDLIBS='-Lvendor/lib64/windows/ -lgdi32 -lglfw3 -lopengl32'
 ```

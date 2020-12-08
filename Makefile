@@ -2,6 +2,10 @@
 .POSIX:
 .SUFFIXES:
 
+# Build requirements references:
+# https://www.glfw.org/docs/latest/build_guide.html
+# https://miniaud.io/docs/manual/index.html#Building
+
 # CFLAGS breakout by category
 CFLAGS_VERSION = -std=c99
 CFLAGS_OPTIMIZATIONS = -g -Og
