@@ -9,8 +9,6 @@
 
 #include <GLFW/glfw3.h>
 #include <linmath/linmath.h>
-#define MINIAUDIO_IMPLEMENTATION
-#include <miniaudio/miniaudio.h>
 
 #include "model.h"
 #include "opengl.h"
@@ -36,32 +34,6 @@
 static const float WIDTH = 16.0f;
 static const float HEIGHT = 9.0f;
 static const float ASPECT = WIDTH / HEIGHT;
-
-static void
-death_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
-{
-    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
-    if (pDecoder == NULL) {
-        return;
-    }
-
-    ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount);
-
-    (void)pInput;
-}
-
-static void
-flap_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
-{
-    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
-    if (pDecoder == NULL) {
-        return;
-    }
-
-    ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount);
-
-    (void)pInput;
-}
 
 // Based on:
 // http://www.jeffreythompson.org/collision-detection/circle-rect.php
@@ -168,66 +140,6 @@ main(int argc, char* argv[])
 
     srand(time(NULL));
 
-    // init death sound effect
-    ma_decoder death_decoder;
-    ma_result result = ma_decoder_init_memory_wav(SOUND_DEATH_DATA, sizeof(SOUND_DEATH_DATA), NULL, &death_decoder);
-    if (result != MA_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    ma_decoder_seek_to_pcm_frame(&death_decoder, 100000);
-
-    ma_device_config death_config = ma_device_config_init(ma_device_type_playback);
-    death_config.playback.format   = death_decoder.outputFormat;
-    death_config.playback.channels = death_decoder.outputChannels;
-    death_config.sampleRate        = death_decoder.outputSampleRate;
-    death_config.dataCallback      = death_callback;
-    death_config.pUserData         = &death_decoder;
-
-    ma_device death_device;
-    if (ma_device_init(NULL, &death_config, &death_device) != MA_SUCCESS) {
-        printf("Failed to open playback device.\n");
-        ma_decoder_uninit(&death_decoder);
-        return EXIT_FAILURE;
-    }
-
-    if (ma_device_start(&death_device) != MA_SUCCESS) {
-        printf("Failed to start playback device.\n");
-        ma_device_uninit(&death_device);
-        ma_decoder_uninit(&death_decoder);
-        return EXIT_FAILURE;
-    }
-
-    // init flap sound effect
-    ma_decoder flap_decoder;
-    result = ma_decoder_init_memory_wav(SOUND_FLAP_DATA, sizeof(SOUND_FLAP_DATA), NULL, &flap_decoder);
-    if (result != MA_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    ma_decoder_seek_to_pcm_frame(&flap_decoder, 100000);
-
-    ma_device_config flap_config = ma_device_config_init(ma_device_type_playback);
-    flap_config.playback.format   = flap_decoder.outputFormat;
-    flap_config.playback.channels = flap_decoder.outputChannels;
-    flap_config.sampleRate        = flap_decoder.outputSampleRate;
-    flap_config.dataCallback      = flap_callback;
-    flap_config.pUserData         = &flap_decoder;
-
-    ma_device flap_device;
-    if (ma_device_init(NULL, &flap_config, &flap_device) != MA_SUCCESS) {
-        printf("Failed to open playback device.\n");
-        ma_decoder_uninit(&flap_decoder);
-        return EXIT_FAILURE;
-    }
-
-    if (ma_device_start(&flap_device) != MA_SUCCESS) {
-        printf("Failed to start playback device.\n");
-        ma_device_uninit(&flap_device);
-        ma_decoder_uninit(&flap_decoder);
-        return EXIT_FAILURE;
-    }
-
     if (!glfwInit()) {
         const char* error = NULL;
         glfwGetError(&error);
@@ -317,7 +229,7 @@ main(int argc, char* argv[])
 
     float pipes[PIPE_COUNT] = { 0.0f };
     for (long i = 0; i < PIPE_COUNT; i++) {
-        float gap = (float)rand() / (float)RAND_MAX;
+        float gap = (float)rand() / RAND_MAX;
         gap -= 0.5f;
         pipes[i] = gap * 2.0f;
     }
@@ -348,7 +260,6 @@ main(int argc, char* argv[])
         // only allow single flaps (not continuous)
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !dead) {
             if (!space) {
-                ma_decoder_seek_to_pcm_frame(&flap_decoder, 0);
                 bird_vel_y = 6.0f;
                 space = true;
             } else {
@@ -384,7 +295,6 @@ main(int argc, char* argv[])
             }
 
             if (collision && !dead) {
-                ma_decoder_seek_to_pcm_frame(&death_decoder, 0);
                 dead = true;
                 bird_vel_x = 0.0f;
                 bird_vel_y = 8.0f;
@@ -466,12 +376,6 @@ main(int argc, char* argv[])
     // Cleanup GLFW3 resources
     glfwDestroyWindow(window);
     glfwTerminate();
-
-    // Cleanup miniaudio resources
-    ma_device_uninit(&death_device);
-    ma_decoder_uninit(&death_decoder);
-    ma_device_uninit(&flap_device);
-    ma_decoder_uninit(&flap_decoder);
 
     return EXIT_SUCCESS;
 }

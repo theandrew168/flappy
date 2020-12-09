@@ -22371,7 +22371,7 @@ static ma_result ma_device_start__pulse(ma_device* pDevice)
 
 static ma_result ma_device_stop__pulse(ma_device* pDevice)
 {
-    ma_result result = 0;
+    ma_result result;
     ma_bool32 wasSuccessful;
 
     MA_ASSERT(pDevice != NULL);
