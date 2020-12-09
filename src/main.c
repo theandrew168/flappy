@@ -63,14 +63,14 @@ spriter_draw(const struct spriter* spriter, unsigned t, float x, float y, float 
     glUseProgram(spriter->shader);
 
     // setup model matrix
-    mat4x4 m = { 0 };
+    mat4x4 m = {{ 0 }};
     mat4x4_translate(m, x, y, z);
     mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));
     mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
     glUniformMatrix4fv(spriter->uniform_model, 1, GL_FALSE, (const float*)m);
 
     // setup projection matrix
-    mat4x4 p = { 0 };
+    mat4x4 p = {{ 0 }};
     mat4x4_identity(p);
     mat4x4_ortho(p, -(WIDTH / 2.0f), (WIDTH / 2.0f), -(HEIGHT / 2.0f), (HEIGHT / 2.0f), -1.0f, 1.0f);
     glUniformMatrix4fv(spriter->uniform_projection, 1, GL_FALSE, (const float*)p);
@@ -215,7 +215,7 @@ main(int argc, char* argv[])
     unsigned int texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
 
     // game objects
-    float camera = -4.0f;
+    float camera = -3.0f;
 
     float pipes[PIPE_COUNT] = { 0.0f };
     for (long i = 0; i < PIPE_COUNT; i++) {
@@ -224,23 +224,42 @@ main(int argc, char* argv[])
         pipes[i] = gap * 2.0f;
     }
 
-    float bird_pos_x = -8.0f;
+    float bird_pos_x = -6.0f;
     float bird_pos_y = 0.0f;
-    float bird_vel_x = 1.0f;
+    float bird_vel_x = 1.5f;
     float bird_vel_y = 0.0f;
 
     // bookkeeping vars
+    bool dead = false;
+    bool space = false;
+    double bg_scroll = 0.0f;
     double last_second = glfwGetTime();
     double last_frame = last_second;
     long frame_count = 0;
 
     // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
+        //
+        // UPDATE
+        //
+
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        // UPDATE
+        // only allow single flaps (not continuous)
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !dead) {
+            if (!space) {
+                bird_vel_y = 6.0f;
+                space = true;
+            } else {
+                bird_vel_y -= 0.015f;
+            }
+        } else {
+            bird_vel_y -= 0.015f;
+            space = false;
+        }
+
         double now = glfwGetTime();
         double delta = now - last_frame;
         last_frame = now;
@@ -250,7 +269,32 @@ main(int argc, char* argv[])
         bird_pos_y += (bird_vel_y * delta);
         camera += (bird_vel_x * delta);
 
+        // check collision
+        if (bird_pos_x >= -4.0f) {
+            long pipe_index = (bird_pos_x + 4.0f) / 4.0f;
+            //printf("approaching pipe: %ld\n", pipe_index);
+            float gap = pipes[pipe_index % PIPE_COUNT];
+            float top = gap + 6.0f;
+            float bot = gap - 6.0f;
+
+            bool collision = false;
+            if (intersect_point_quad(bird_pos_x, bird_pos_y, pipe_index * 4.0f, top, 0.5f, 8.0f)) {
+                collision = true;
+            }
+            if (intersect_point_quad(bird_pos_x, bird_pos_y, pipe_index * 4.0f, bot, 0.5f, 8.0f)) {
+                collision = true;
+            }
+
+            if (collision && !dead) {
+                dead = true;
+                bird_vel_x = 0.0f;
+                bird_vel_y = 10.0f;
+            }
+        }
+
+        //
         // RENDER
+        //
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -276,7 +320,9 @@ main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // draw background (scrolls independently of game objects)
-        double bg_scroll = glfwGetTime() / 2.0f;
+        if (!dead) {
+            bg_scroll = glfwGetTime() * 0.5f;
+        }
         double bg_offset = fmod(bg_scroll, 4.5);
         for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
             spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
@@ -286,16 +332,16 @@ main(int argc, char* argv[])
         for (float x = camera - 8.0f; x <= camera + 12.0f; x += 4.0f) {
             if (x < 0.0f) continue;
             long pipe_index = x / 4.0f;
-            float pipe_x = pipe_index * 4.0f;
             float gap = pipes[pipe_index % PIPE_COUNT];
             float top = gap + 6.0f;
             float bot = gap - 6.0f;
+            float pipe_x = pipe_index * 4.0f;
             spriter_draw(&spriter, texture_pipe_top, pipe_x - camera, top, 0.1f, 0.0f, 0.5f, 4.0f);
             spriter_draw(&spriter, texture_pipe_bot, pipe_x - camera, bot, 0.1f, 0.0f, 0.5f, 4.0f);
         }
 
         // draw bird
-        spriter_draw(&spriter, texture_bird, bird_pos_x - camera, bird_pos_y, 0.2f, 0.0f, 0.5f, 0.5f);
+        spriter_draw(&spriter, texture_bird, bird_pos_x - camera, bird_pos_y, 0.2f, bird_vel_y * 5.0f, 0.5f, 0.5f);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         frame_count++;
