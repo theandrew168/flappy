@@ -229,7 +229,7 @@ main(int argc, char* argv[])
 
     float pipes[PIPE_COUNT] = { 0.0f };
     for (long i = 0; i < PIPE_COUNT; i++) {
-        float gap = (float)rand() / RAND_MAX;
+        float gap = (float)rand() / (float)RAND_MAX;
         gap -= 0.5f;
         pipes[i] = gap * 2.0f;
     }
