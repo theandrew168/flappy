@@ -35,17 +35,28 @@ static const float WIDTH = 16.0f;
 static const float HEIGHT = 9.0f;
 static const float ASPECT = WIDTH / HEIGHT;
 
+// Based on:
+// http://www.jeffreythompson.org/collision-detection/circle-rect.php
+//  modified for rx and ry being in the center of the rect
 static bool
-intersect_point_quad(float px, float py, float qx, float qy, float qw, float qh)
+intersect_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh)
 {
-    // calculate edges of the quad
-    float left = qx - (qw / 2.0f);
-    float right = qx + (qw / 2.0f);
-    float bottom = qy - (qh / 2.0f);
-    float top = qy + (qh / 2.0f);
+    float test_x = cx;
+    float test_y = cy;
+    float half_rw = rw / 2.0f;
+    float half_rh = rh / 2.0f;
 
-    // intersection if p lies within the quad
-    return px >= left && px <= right && py >= bottom && py <= top;
+    if (cx < rx - half_rw) test_x = rx - half_rw;  // left edge
+    else if (cx > rx + half_rw) test_x = rx + half_rw;  // right edge
+    if (cy < ry - half_rh) test_y = ry - half_rh;  // bottom edge
+    else if (cy > ry + half_rh) test_y = ry + half_rh;  // top edge
+
+    // check distance from closest edges
+    float dist_x = cx - test_x;
+    float dist_y = cy - test_y;
+    float distance = sqrtf((dist_x * dist_x) + (dist_y * dist_y));
+
+    return distance <= cr;
 }
 
 struct spriter {
@@ -136,7 +147,6 @@ main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    // TODO: how to fullscreen?
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     // ask for an OpenGL 3.3 Core profile
@@ -271,24 +281,23 @@ main(int argc, char* argv[])
 
         // check collision
         if (bird_pos_x >= -4.0f) {
-            long pipe_index = (bird_pos_x + 4.0f) / 4.0f;
-            //printf("approaching pipe: %ld\n", pipe_index);
+            long pipe_index = (bird_pos_x + 2.0f) / 4.0f;
             float gap = pipes[pipe_index % PIPE_COUNT];
             float top = gap + 6.0f;
             float bot = gap - 6.0f;
 
             bool collision = false;
-            if (intersect_point_quad(bird_pos_x, bird_pos_y, pipe_index * 4.0f, top, 0.5f, 8.0f)) {
+            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, top, 1.0f, 8.0f)) {
                 collision = true;
             }
-            if (intersect_point_quad(bird_pos_x, bird_pos_y, pipe_index * 4.0f, bot, 0.5f, 8.0f)) {
+            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, bot, 1.0f, 8.0f)) {
                 collision = true;
             }
 
             if (collision && !dead) {
                 dead = true;
                 bird_vel_x = 0.0f;
-                bird_vel_y = 10.0f;
+                bird_vel_y = 8.0f;
             }
         }
 
