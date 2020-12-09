@@ -264,7 +264,7 @@ main(int argc, char* argv[])
         // only allow single flaps (not continuous)
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !dead) {
             if (!space) {
-                bird_vel_y = 8.0f;
+                bird_vel_y = 7.0f;
                 space = true;
             } else {
                 bird_vel_y -= delta * 18.0f;
