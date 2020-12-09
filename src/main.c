@@ -253,6 +253,10 @@ main(int argc, char* argv[])
         // UPDATE
         //
 
+        double now = glfwGetTime();
+        double delta = now - last_frame;
+        last_frame = now;
+
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
@@ -260,19 +264,15 @@ main(int argc, char* argv[])
         // only allow single flaps (not continuous)
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !dead) {
             if (!space) {
-                bird_vel_y = 6.0f;
+                bird_vel_y = 8.0f;
                 space = true;
             } else {
-                bird_vel_y -= 0.015f;
+                bird_vel_y -= delta * 18.0f;
             }
         } else {
-            bird_vel_y -= 0.015f;
+            bird_vel_y -= delta * 18.0f;
             space = false;
         }
-
-        double now = glfwGetTime();
-        double delta = now - last_frame;
-        last_frame = now;
 
         // update bird and camera positions
         bird_pos_x += (bird_vel_x * delta);
