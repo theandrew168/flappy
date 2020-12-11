@@ -1,17 +1,17 @@
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 #include <GLFW/glfw3.h>
 #include <linmath/linmath.h>
 
+#include "config.h"
 #include "model.h"
 #include "opengl.h"
+#include "physics.h"
 #include "shader.h"
 #include "texture.h"
 
@@ -28,55 +28,10 @@
 #define M_PI 3.141592653589793
 #endif
 
-// game is designed for a 16:9 aspect ratio
-static const float WIDTH = 16.0f;
-static const float HEIGHT = 9.0f;
-static const float ASPECT = WIDTH / HEIGHT;
-
-static const float GAP     = 6.0f;
-static const float FLAP    = 7.0f;
-static const float SPEED   = 3.0f;
-static const float SCROLL  = 1.0f;
-static const float GRAVITY = 18.0f;
-
-static const float BG_WIDTH    = 4.5;
-static const float BG_HEIGHT   = 9.0f;
-static const float BG_LAYER    = 0.0f;
-static const float BIRD_WIDTH  = 1.0f;
-static const float BIRD_HEIGHT = 1.0f;
-static const float BIRD_LAYER  = 0.2f;
-static const float PIPE_WIDTH  = 1.0f;
-static const float PIPE_HEIGHT = 8.0f;
-static const float PIPE_LAYER  = 0.1f;
 
 enum {
     PIPE_COUNT = 512,
 };
-
-
-// Based on:
-// http://www.jeffreythompson.org/collision-detection/circle-rect.php
-//  modified for rx and ry being in the center of the rect
-static bool
-intersect_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh)
-{
-    float test_x = cx;
-    float test_y = cy;
-    float half_rw = rw / 2.0f;
-    float half_rh = rh / 2.0f;
-
-    if (cx < rx - half_rw) test_x = rx - half_rw;  // left edge
-    else if (cx > rx + half_rw) test_x = rx + half_rw;  // right edge
-    if (cy < ry - half_rh) test_y = ry - half_rh;  // bottom edge
-    else if (cy > ry + half_rh) test_y = ry + half_rh;  // top edge
-
-    // check distance from closest edges
-    float dist_x = cx - test_x;
-    float dist_y = cy - test_y;
-    float distance = sqrtf((dist_x * dist_x) + (dist_y * dist_y));
-
-    return distance <= cr;
-}
 
 struct game {
     // OpenGL handles for sprite rendering
@@ -112,27 +67,45 @@ struct game {
     float pipes[PIPE_COUNT];
 };
 
-void
-game_reset(struct game* game)
+bool game_init(struct game* game);
+void game_free(struct game* game);
+void game_reset(struct game* game);
+void game_update(struct game* game, GLFWwindow* window, double delta);
+void game_render(struct game* game, long width, long height);
+
+static void
+draw_sprite(struct game* game, unsigned t, float x, float y, float z, float r, float sx, float sy)
 {
-    assert(game != NULL);
+    // bind the shader
+    glUseProgram(game->sprite_shader);
 
-    // game state
-    game->running = false;
-    game->dead = false;
-    game->space = false;
+    // setup model matrix
+    mat4x4 m = {{ 0 }};
+    mat4x4_translate(m, x, y, z);
+    mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));  // convert deg to rad
+    mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
+    glUniformMatrix4fv(game->sprite_shader_uniform_model, 1, GL_FALSE, (const float*)m);
 
-    // game objects
-    game->camera = -3.0f;
-    game->bird_pos_x = -6.0f;
-    game->bird_pos_y = 0.0f;
-    game->bird_vel_x = SPEED;
-    game->bird_vel_y = 0.0f;
-    for (long i = 0; i < PIPE_COUNT; i++) {
-        float gap = (float)rand() / (float)RAND_MAX;  // [0.0, 1.0]
-        gap -= 0.5f;  // [-0.5, 0.5]
-        game->pipes[i] = gap * 4.0f;  // [-2.0, 2.0]
-    }
+    // setup projection matrix
+    mat4x4 p = {{ 0 }};
+    mat4x4_identity(p);
+    mat4x4_ortho(p, -(WIDTH / 2.0f), (WIDTH / 2.0f), -(HEIGHT / 2.0f), (HEIGHT / 2.0f), -1.0f, 1.0f);
+    glUniformMatrix4fv(game->sprite_shader_uniform_projection, 1, GL_FALSE, (const float*)p);
+
+    // bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, t);
+
+    // bind the model
+    glBindVertexArray(game->sprite_model);
+
+    // draw the sprite!
+    glDrawArrays(GL_TRIANGLES, 0, game->sprite_model_vertex_count);
+
+    // unbind everything
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
 }
 
 bool
@@ -181,6 +154,29 @@ game_free(struct game* game)
 }
 
 void
+game_reset(struct game* game)
+{
+    assert(game != NULL);
+
+    // game state
+    game->running = false;
+    game->dead = false;
+    game->space = false;
+
+    // game objects
+    game->camera = -3.0f;
+    game->bird_pos_x = -6.0f;
+    game->bird_pos_y = 0.0f;
+    game->bird_vel_x = SPEED;
+    game->bird_vel_y = 0.0f;
+    for (long i = 0; i < PIPE_COUNT; i++) {
+        float gap = (float)rand() / (float)RAND_MAX;  // [0.0, 1.0]
+        gap -= 0.5f;  // [-0.5, 0.5]
+        game->pipes[i] = gap * 4.0f;  // [-2.0, 2.0]
+    }
+}
+
+void
 game_update(struct game* game, GLFWwindow* window, double delta)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -218,12 +214,12 @@ game_update(struct game* game, GLFWwindow* window, double delta)
         float bot = gap - GAP;
 
         bool collision = false;
-        if (intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
-                                  pipe_index * 4.0f, top, PIPE_WIDTH, PIPE_HEIGHT)) {
+        if (physics_intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
+                                          pipe_index * 4.0f, top, PIPE_WIDTH, PIPE_HEIGHT)) {
             collision = true;
         }
-        if (intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
-                                  pipe_index * 4.0f, bot, PIPE_WIDTH, PIPE_HEIGHT)) {
+        if (physics_intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
+                                          pipe_index * 4.0f, bot, PIPE_WIDTH, PIPE_HEIGHT)) {
             collision = true;
         }
 
@@ -240,47 +236,9 @@ game_update(struct game* game, GLFWwindow* window, double delta)
     }
 }
 
-static void
-draw_sprite(struct game* game, unsigned t, float x, float y, float z, float r, float sx, float sy)
-{
-    // bind the shader
-    glUseProgram(game->sprite_shader);
-
-    // setup model matrix
-    mat4x4 m = {{ 0 }};
-    mat4x4_translate(m, x, y, z);
-    mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));  // convert deg to rad
-    mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
-    glUniformMatrix4fv(game->sprite_shader_uniform_model, 1, GL_FALSE, (const float*)m);
-
-    // setup projection matrix
-    mat4x4 p = {{ 0 }};
-    mat4x4_identity(p);
-    mat4x4_ortho(p, -(WIDTH / 2.0f), (WIDTH / 2.0f), -(HEIGHT / 2.0f), (HEIGHT / 2.0f), -1.0f, 1.0f);
-    glUniformMatrix4fv(game->sprite_shader_uniform_projection, 1, GL_FALSE, (const float*)p);
-
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, t);
-
-    // bind the model
-    glBindVertexArray(game->sprite_model);
-
-    // draw the sprite!
-    glDrawArrays(GL_TRIANGLES, 0, game->sprite_model_vertex_count);
-
-    // unbind everything
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
-}
-
 void
-game_render(struct game* game, GLFWwindow* window)
+game_render(struct game* game, long width, long height)
 {
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
     // determine boxing and calculate centering offsets
     long x_offset = 0;
     long y_offset = 0;
@@ -438,7 +396,10 @@ main(int argc, char* argv[])
         last_frame = now;
 
         game_update(&game, window, delta);
-        game_render(&game, window);
+
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        game_render(&game, width, height);
 
         frame_count++;
         if (glfwGetTime() - last_second >= 1.0) {
