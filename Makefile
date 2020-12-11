@@ -79,7 +79,7 @@ res/textures/pipe_top.h: res/textures/pipe_top.png
 $(resource_headers): venv
 
 # Compile and link the main executable
-flappy: src/main.c libflappy.a $(resource_headers)
+flappy: src/main.c src/config.h libflappy.a $(resource_headers)
 	@echo "EXE     $@"
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c libflappy.a $(LDLIBS)
 

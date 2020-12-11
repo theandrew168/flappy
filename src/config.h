@@ -7,7 +7,7 @@ static const float ASPECT = WIDTH / HEIGHT;
 
 static const float GAP     = 6.0f;
 static const float FLAP    = 7.0f;
-static const float SPEED   = 3.0f;
+static const float SPEED   = 6.0f;
 static const float SCROLL  = 1.0f;
 static const float GRAVITY = 18.0f;
 
