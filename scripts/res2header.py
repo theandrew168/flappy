@@ -61,7 +61,7 @@ def model2header(resource_file):
     s.write('\n')
     s.write('static const char MODEL_{}_PATH[] = "{}";\n'.format(name.upper(), resource_file))
     s.write('static const int MODEL_{}_FORMAT = {};\n'.format(name.upper(), format))
-    s.write('static const long MODEL_{}_COUNT = {};\n'.format(name.upper(), count))
+    s.write('static const long MODEL_{}_VERTEX_COUNT = {};\n'.format(name.upper(), count))
     s.write('static const float MODEL_{}_VERTICES[] = {{\n'.format(name.upper()))
     for group in grouper(vertices, vertex_size):
         group = list(group)

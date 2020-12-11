@@ -44,10 +44,14 @@ static const float BG_HEIGHT   = 9.0f;
 static const float BG_LAYER    = 0.0f;
 static const float BIRD_WIDTH  = 1.0f;
 static const float BIRD_HEIGHT = 1.0f;
-static const float BIRD_LAYER  = 0.1f;
+static const float BIRD_LAYER  = 0.2f;
 static const float PIPE_WIDTH  = 1.0f;
 static const float PIPE_HEIGHT = 8.0f;
-static const float PIPE_LAYER  = 0.2f;
+static const float PIPE_LAYER  = 0.1f;
+
+enum {
+    PIPE_COUNT = 512,
+};
 
 
 // Based on:
@@ -74,42 +78,196 @@ intersect_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw
     return distance <= cr;
 }
 
-struct spriter {
-    unsigned int shader;
-    int uniform_model;
-    int uniform_projection;
-    unsigned int model;
-    long vertex_count;
+struct game {
+    // OpenGL handles for sprite rendering
+    unsigned int sprite_shader;
+    int sprite_shader_uniform_model;
+    int sprite_shader_uniform_projection;
+    unsigned int sprite_buffer;
+    unsigned int sprite_model;
+    unsigned int sprite_model_vertex_count;
+
+    // OpenGL texture handles
+    unsigned int texture_bg;
+    unsigned int texture_bird;
+    unsigned int texture_pipe_bot;
+    unsigned int texture_pipe_top;
+
+    // timing vars
+    double last_second;
+    double last_frame;
+    long frame_count;
+
+    // game state
+    bool running;
+    bool dead;
+    bool space;
+
+    // game objects
+    float camera;
+    float bird_pos_x;
+    float bird_pos_y;
+    float bird_vel_x;
+    float bird_vel_y;
+    float pipes[PIPE_COUNT];
 };
 
+void
+game_reset(struct game* game)
+{
+    assert(game != NULL);
+
+    // game state
+    game->running = false;
+    game->dead = false;
+    game->space = false;
+
+    // game objects
+    game->camera = -3.0f;
+    game->bird_pos_x = -6.0f;
+    game->bird_pos_y = 0.0f;
+    game->bird_vel_x = SPEED;
+    game->bird_vel_y = 0.0f;
+    for (long i = 0; i < PIPE_COUNT; i++) {
+        float gap = (float)rand() / (float)RAND_MAX;  // [0.0, 1.0]
+        gap -= 0.5f;  // [-0.5, 0.5]
+        game->pipes[i] = gap * 4.0f;  // [-2.0, 2.0]
+    }
+}
+
+bool
+game_init(struct game* game)
+{
+    assert(game != NULL);
+
+    // create shader for rendering sprites
+    game->sprite_shader = shader_compile_and_link(SHADER_SPRITE_VERT_SOURCE, SHADER_SPRITE_FRAG_SOURCE);
+    game->sprite_shader_uniform_model = glGetUniformLocation(game->sprite_shader, "u_model");
+    game->sprite_shader_uniform_projection = glGetUniformLocation(game->sprite_shader, "u_projection");
+
+    // set texture uniform location
+    glUseProgram(game->sprite_shader);
+    glUniform1i(glGetUniformLocation(game->sprite_shader, "u_texture"), 0);
+    glUseProgram(0);
+
+    // create model for rendering sprites
+    game->sprite_buffer = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_VERTEX_COUNT, MODEL_SPRITE_VERTICES);
+    game->sprite_model = model_buffer_config(MODEL_SPRITE_FORMAT, game->sprite_buffer);
+    game->sprite_model_vertex_count = MODEL_SPRITE_VERTEX_COUNT;
+
+    // create textures
+    game->texture_bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
+    game->texture_bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
+    game->texture_pipe_bot = texture_create(TEXTURE_PIPE_BOT_FORMAT, TEXTURE_PIPE_BOT_WIDTH, TEXTURE_PIPE_BOT_HEIGHT, TEXTURE_PIPE_BOT_PIXELS);
+    game->texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
+
+    // reset
+    game_reset(game);
+    return true;
+}
+
+void
+game_free(struct game* game)
+{
+    assert(game != NULL);
+
+    glDeleteProgram(game->sprite_shader);
+    glDeleteBuffers(1, &game->sprite_buffer);
+    glDeleteVertexArrays(1, &game->sprite_model);
+    glDeleteTextures(1, &game->texture_bg);
+    glDeleteTextures(1, &game->texture_bird);
+    glDeleteTextures(1, &game->texture_pipe_bot);
+    glDeleteTextures(1, &game->texture_pipe_top);
+}
+
+void
+game_update(struct game* game, GLFWwindow* window, double delta)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+
+    // only allow single flaps (not continuous)
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !game->dead) {
+        game->running = true;
+        if (!game->space) {
+            game->bird_vel_y = FLAP;
+            game->space = true;
+        } else {
+            game->bird_vel_y -= delta * GRAVITY;
+        }
+    } else {
+        if (game->running) {
+            game->bird_vel_y -= delta * GRAVITY;
+        }
+        game->space = false;
+    }
+
+    // update bird and camera positions
+    if (game->running) {
+        game->bird_pos_x += (game->bird_vel_x * delta);
+        game->bird_pos_y += (game->bird_vel_y * delta);
+        game->camera += (game->bird_vel_x * delta);
+    }
+
+    // check collision
+    if (game->bird_pos_x >= -4.0f) {
+        long pipe_index = (game->bird_pos_x + 2.0f) / 4.0f;
+        float gap = game->pipes[pipe_index % PIPE_COUNT];
+        float top = gap + GAP;
+        float bot = gap - GAP;
+
+        bool collision = false;
+        if (intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
+                                  pipe_index * 4.0f, top, PIPE_WIDTH, PIPE_HEIGHT)) {
+            collision = true;
+        }
+        if (intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
+                                  pipe_index * 4.0f, bot, PIPE_WIDTH, PIPE_HEIGHT)) {
+            collision = true;
+        }
+
+        if (collision && !game->dead) {
+            game->dead = true;
+            game->bird_vel_x = 0.0f;
+            game->bird_vel_y = 8.0f;
+
+            // determine score based on bird's position
+            long score = (game->bird_pos_x + 3.0f) / 4.0f;
+            printf("%s\n", "YOU DIED!");
+            printf("Score: %ld\n", score);
+        }
+    }
+}
+
 static void
-spriter_draw(const struct spriter* spriter, unsigned t, float x, float y, float z, float r, float sx, float sy)
+draw_sprite(struct game* game, unsigned t, float x, float y, float z, float r, float sx, float sy)
 {
     // bind the shader
-    glUseProgram(spriter->shader);
+    glUseProgram(game->sprite_shader);
 
     // setup model matrix
     mat4x4 m = {{ 0 }};
     mat4x4_translate(m, x, y, z);
     mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));  // convert deg to rad
     mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
-    glUniformMatrix4fv(spriter->uniform_model, 1, GL_FALSE, (const float*)m);
+    glUniformMatrix4fv(game->sprite_shader_uniform_model, 1, GL_FALSE, (const float*)m);
 
     // setup projection matrix
     mat4x4 p = {{ 0 }};
     mat4x4_identity(p);
     mat4x4_ortho(p, -(WIDTH / 2.0f), (WIDTH / 2.0f), -(HEIGHT / 2.0f), (HEIGHT / 2.0f), -1.0f, 1.0f);
-    glUniformMatrix4fv(spriter->uniform_projection, 1, GL_FALSE, (const float*)p);
+    glUniformMatrix4fv(game->sprite_shader_uniform_projection, 1, GL_FALSE, (const float*)p);
 
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, t);
 
     // bind the model
-    glBindVertexArray(spriter->model);
+    glBindVertexArray(game->sprite_model);
 
     // draw the sprite!
-    glDrawArrays(GL_TRIANGLES, 0, spriter->vertex_count);
+    glDrawArrays(GL_TRIANGLES, 0, game->sprite_model_vertex_count);
 
     // unbind everything
     glBindVertexArray(0);
@@ -117,9 +275,64 @@ spriter_draw(const struct spriter* spriter, unsigned t, float x, float y, float 
     glUseProgram(0);
 }
 
-enum {
-    PIPE_COUNT = 512,
-};
+void
+game_render(struct game* game, GLFWwindow* window)
+{
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    // determine boxing and calculate centering offsets
+    long x_offset = 0;
+    long y_offset = 0;
+    float aspect = (float)width / height;
+    if (aspect <= ASPECT) {
+        // letterbox
+        y_offset = (height - (width / ASPECT)) / 2;
+        height = width / ASPECT;
+    } else {
+        // pillarbox
+        x_offset = (width - (height * ASPECT)) / 2;
+        width = height * ASPECT;
+    }
+
+    // set viewport every frame (is this bad?)
+    glViewport(x_offset, y_offset, width, height);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // draw background (scrolls independently of game objects)
+    double bg_scroll = glfwGetTime() * SCROLL;
+    double bg_offset = fmod(bg_scroll, 4.5);
+    for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
+        draw_sprite(game, game->texture_bg,
+            x - bg_offset, 0.0f, BG_LAYER,
+            0.0f, BG_WIDTH, BG_HEIGHT);
+    }
+
+    // draw pipes (every 4.0f units starting at 0.0f)
+    for (float x = game->camera - 8.0f; x <= game->camera + 12.0f; x += 4.0f) {
+        if (x < 0.0f) continue;
+        long pipe_index = x / 4.0f;
+        float gap = game->pipes[pipe_index % PIPE_COUNT];
+        float top = gap + GAP;
+        float bot = gap - GAP;
+        float pipe_x = pipe_index * 4.0f;
+        draw_sprite(game, game->texture_pipe_top,
+            pipe_x - game->camera, top, PIPE_LAYER,
+            0.0f, PIPE_WIDTH, PIPE_HEIGHT);
+        draw_sprite(game, game->texture_pipe_bot,
+            pipe_x - game->camera, bot, PIPE_LAYER,
+            0.0f, PIPE_WIDTH, PIPE_HEIGHT);
+    }
+
+    // draw bird
+    draw_sprite(game, game->texture_bird,
+        game->bird_pos_x - game->camera, game->bird_pos_y, BIRD_LAYER,
+        game->bird_vel_y * 5.0f, BIRD_WIDTH, BIRD_HEIGHT);
+}
+
+
 
 
 static void
@@ -210,180 +423,23 @@ main(int argc, char* argv[])
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    // create shader for rendering sprites
-    unsigned int shader_sprite = shader_compile_and_link(SHADER_SPRITE_VERT_SOURCE, SHADER_SPRITE_FRAG_SOURCE);
-    int u_model = glGetUniformLocation(shader_sprite, "u_model");
-    int u_projection = glGetUniformLocation(shader_sprite, "u_projection");
+    struct game game = { 0 };
+    game_init(&game);
 
-    // set texture uniform location
-    glUseProgram(shader_sprite);
-    glUniform1i(glGetUniformLocation(shader_sprite, "u_texture"), 0);
-    glUseProgram(0);
-
-    // create model for rendering sprites
-    unsigned int buffer_sprite = model_buffer_create(MODEL_SPRITE_FORMAT, MODEL_SPRITE_COUNT, MODEL_SPRITE_VERTICES);
-    unsigned int model_sprite = model_buffer_config(MODEL_SPRITE_FORMAT, buffer_sprite);
-
-    // collect spriter info
-    struct spriter spriter = {
-        .shader = shader_sprite,
-        .uniform_model = u_model,
-        .uniform_projection = u_projection,
-        .model = model_sprite,
-        .vertex_count = MODEL_SPRITE_COUNT,
-    };
-
-    // create sprite textures
-    unsigned int texture_bg = texture_create(TEXTURE_BG_FORMAT, TEXTURE_BG_WIDTH, TEXTURE_BG_HEIGHT, TEXTURE_BG_PIXELS);
-    unsigned int texture_bird = texture_create(TEXTURE_BIRD_FORMAT, TEXTURE_BIRD_WIDTH, TEXTURE_BIRD_HEIGHT, TEXTURE_BIRD_PIXELS);
-    unsigned int texture_pipe_bot = texture_create(TEXTURE_PIPE_BOT_FORMAT, TEXTURE_PIPE_BOT_WIDTH, TEXTURE_PIPE_BOT_HEIGHT, TEXTURE_PIPE_BOT_PIXELS);
-    unsigned int texture_pipe_top = texture_create(TEXTURE_PIPE_TOP_FORMAT, TEXTURE_PIPE_TOP_WIDTH, TEXTURE_PIPE_TOP_HEIGHT, TEXTURE_PIPE_TOP_PIXELS);
-
-    // game objects
-    float camera = -3.0f;
-
-    float pipes[PIPE_COUNT] = { 0.0f };
-    for (long i = 0; i < PIPE_COUNT; i++) {
-        float gap = (float)rand() / (float)RAND_MAX;  // [0.0, 1.0]
-        gap -= 0.5f;  // [-0.5, 0.5]
-        pipes[i] = gap * 4.0f;  // [-2.0, 2.0]
-    }
-
-    float bird_pos_x = -6.0f;
-    float bird_pos_y = 0.0f;
-    float bird_vel_x = SPEED;
-    float bird_vel_y = 0.0f;
-
-    // bookkeeping vars
-    bool running = false;
-    bool dead = false;
-    bool space = false;
-    double bg_scroll = 0.0f;
+    // timing vars
     double last_second = glfwGetTime();
     double last_frame = last_second;
     long frame_count = 0;
 
     // loop til exit or ESCAPE key
     while (!glfwWindowShouldClose(window)) {
-        //
-        // UPDATE
-        //
-
         double now = glfwGetTime();
         double delta = now - last_frame;
         last_frame = now;
 
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
+        game_update(&game, window, delta);
+        game_render(&game, window);
 
-        // only allow single flaps (not continuous)
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !dead) {
-            running = true;
-            if (!space) {
-                bird_vel_y = FLAP;
-                space = true;
-            } else {
-                bird_vel_y -= delta * GRAVITY;
-            }
-        } else {
-            if (running) {
-                bird_vel_y -= delta * GRAVITY;
-            }
-            space = false;
-        }
-
-        // update bird and camera positions
-        if (running) {
-            bird_pos_x += (bird_vel_x * delta);
-            bird_pos_y += (bird_vel_y * delta);
-            camera += (bird_vel_x * delta);
-        }
-
-        // determine score based on bird's position
-        //score = (bird_pos_x + 3.0f) / 4.0f;
-        //printf("score: %ld\n", score);
-
-        // check collision
-        if (bird_pos_x >= -4.0f) {
-            long pipe_index = (bird_pos_x + 2.0f) / 4.0f;
-            float gap = pipes[pipe_index % PIPE_COUNT];
-            float top = gap + GAP;
-            float bot = gap - GAP;
-
-            bool collision = false;
-            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, top, PIPE_WIDTH, PIPE_HEIGHT)) {
-                collision = true;
-            }
-            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, bot, PIPE_WIDTH, PIPE_HEIGHT)) {
-                collision = true;
-            }
-
-            if (collision && !dead) {
-                dead = true;
-                bird_vel_x = 0.0f;
-                bird_vel_y = 8.0f;
-            }
-        }
-
-        //
-        // RENDER
-        //
-
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-
-        // determine boxing and calculate centering offsets
-        long x_offset = 0;
-        long y_offset = 0;
-        float aspect = (float)width / height;
-        if (aspect <= ASPECT) {
-            // letterbox
-            y_offset = (height - (width / ASPECT)) / 2;
-            height = width / ASPECT;
-        } else {
-            // pillarbox
-            x_offset = (width - (height * ASPECT)) / 2;
-            width = height * ASPECT;
-        }
-
-        // set viewport every frame (is this bad?)
-        glViewport(x_offset, y_offset, width, height);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // draw background (scrolls independently of game objects)
-        bg_scroll = glfwGetTime() * SCROLL;
-        double bg_offset = fmod(bg_scroll, 4.5);
-        for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
-            spriter_draw(&spriter, texture_bg,
-                x - bg_offset, 0.0f, BG_LAYER,
-                0.0f, BG_WIDTH, BG_HEIGHT);
-        }
-
-        // draw pipes (every 4.0f units starting at 0.0f)
-        for (float x = camera - 8.0f; x <= camera + 12.0f; x += 4.0f) {
-            if (x < 0.0f) continue;
-            long pipe_index = x / 4.0f;
-            float gap = pipes[pipe_index % PIPE_COUNT];
-            float top = gap + GAP;
-            float bot = gap - GAP;
-            float pipe_x = pipe_index * 4.0f;
-            spriter_draw(&spriter, texture_pipe_top,
-                pipe_x - camera, top, PIPE_LAYER,
-                0.0f, PIPE_WIDTH, PIPE_HEIGHT);
-            spriter_draw(&spriter, texture_pipe_bot,
-                pipe_x - camera, bot, PIPE_LAYER,
-                0.0f, PIPE_WIDTH, PIPE_HEIGHT);
-        }
-
-        // draw bird
-        spriter_draw(&spriter, texture_bird,
-            bird_pos_x - camera, bird_pos_y, BIRD_LAYER,
-            bird_vel_y * 5.0f, BIRD_WIDTH, BIRD_HEIGHT);
-
-        // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         frame_count++;
         if (glfwGetTime() - last_second >= 1.0) {
             printf("FPS: %ld  (%lf ms/frame)\n", frame_count, 1000.0/frame_count);
@@ -395,14 +451,7 @@ main(int argc, char* argv[])
         glfwPollEvents();
     }
 
-    // Cleanup OpenGL resources
-    glDeleteVertexArrays(1, &model_sprite);
-    glDeleteBuffers(1, &buffer_sprite);
-    glDeleteProgram(shader_sprite);
-    glDeleteTextures(1, &texture_bg);
-    glDeleteTextures(1, &texture_bird);
-    glDeleteTextures(1, &texture_pipe_bot);
-    glDeleteTextures(1, &texture_pipe_top);
+    game_free(&game);
 
     // Cleanup GLFW3 resources
     glfwDestroyWindow(window);
