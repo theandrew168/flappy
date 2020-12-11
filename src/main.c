@@ -33,6 +33,23 @@ static const float WIDTH = 16.0f;
 static const float HEIGHT = 9.0f;
 static const float ASPECT = WIDTH / HEIGHT;
 
+static const float GAP     = 6.0f;
+static const float FLAP    = 7.0f;
+static const float SPEED   = 3.0f;
+static const float SCROLL  = 1.0f;
+static const float GRAVITY = 18.0f;
+
+static const float BG_WIDTH    = 4.5;
+static const float BG_HEIGHT   = 9.0f;
+static const float BG_LAYER    = 0.0f;
+static const float BIRD_WIDTH  = 1.0f;
+static const float BIRD_HEIGHT = 1.0f;
+static const float BIRD_LAYER  = 0.1f;
+static const float PIPE_WIDTH  = 1.0f;
+static const float PIPE_HEIGHT = 8.0f;
+static const float PIPE_LAYER  = 0.2f;
+
+
 // Based on:
 // http://www.jeffreythompson.org/collision-detection/circle-rect.php
 //  modified for rx and ry being in the center of the rect
@@ -74,7 +91,7 @@ spriter_draw(const struct spriter* spriter, unsigned t, float x, float y, float 
     // setup model matrix
     mat4x4 m = {{ 0 }};
     mat4x4_translate(m, x, y, z);
-    mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));
+    mat4x4_rotate_Z(m, m, r * (M_PI / 180.0));  // convert deg to rad
     mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
     glUniformMatrix4fv(spriter->uniform_model, 1, GL_FALSE, (const float*)m);
 
@@ -227,17 +244,18 @@ main(int argc, char* argv[])
 
     float pipes[PIPE_COUNT] = { 0.0f };
     for (long i = 0; i < PIPE_COUNT; i++) {
-        float gap = (float)rand() / (float)RAND_MAX;
-        gap -= 0.5f;
-        pipes[i] = gap * 4.0f;
+        float gap = (float)rand() / (float)RAND_MAX;  // [0.0, 1.0]
+        gap -= 0.5f;  // [-0.5, 0.5]
+        pipes[i] = gap * 4.0f;  // [-2.0, 2.0]
     }
 
     float bird_pos_x = -6.0f;
     float bird_pos_y = 0.0f;
-    float bird_vel_x = 1.5f;
+    float bird_vel_x = SPEED;
     float bird_vel_y = 0.0f;
 
     // bookkeeping vars
+    bool running = false;
     bool dead = false;
     bool space = false;
     double bg_scroll = 0.0f;
@@ -261,21 +279,26 @@ main(int argc, char* argv[])
 
         // only allow single flaps (not continuous)
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !dead) {
+            running = true;
             if (!space) {
-                bird_vel_y = 7.0f;
+                bird_vel_y = FLAP;
                 space = true;
             } else {
-                bird_vel_y -= delta * 18.0f;
+                bird_vel_y -= delta * GRAVITY;
             }
         } else {
-            bird_vel_y -= delta * 18.0f;
+            if (running) {
+                bird_vel_y -= delta * GRAVITY;
+            }
             space = false;
         }
 
         // update bird and camera positions
-        bird_pos_x += (bird_vel_x * delta);
-        bird_pos_y += (bird_vel_y * delta);
-        camera += (bird_vel_x * delta);
+        if (running) {
+            bird_pos_x += (bird_vel_x * delta);
+            bird_pos_y += (bird_vel_y * delta);
+            camera += (bird_vel_x * delta);
+        }
 
         // determine score based on bird's position
         //score = (bird_pos_x + 3.0f) / 4.0f;
@@ -285,14 +308,14 @@ main(int argc, char* argv[])
         if (bird_pos_x >= -4.0f) {
             long pipe_index = (bird_pos_x + 2.0f) / 4.0f;
             float gap = pipes[pipe_index % PIPE_COUNT];
-            float top = gap + 6.0f;
-            float bot = gap - 6.0f;
+            float top = gap + GAP;
+            float bot = gap - GAP;
 
             bool collision = false;
-            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, top, 1.0f, 8.0f)) {
+            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, top, PIPE_WIDTH, PIPE_HEIGHT)) {
                 collision = true;
             }
-            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, bot, 1.0f, 8.0f)) {
+            if (intersect_circle_rect(bird_pos_x, bird_pos_y, 0.3f, pipe_index * 4.0f, bot, PIPE_WIDTH, PIPE_HEIGHT)) {
                 collision = true;
             }
 
@@ -331,12 +354,12 @@ main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // draw background (scrolls independently of game objects)
-        if (!dead) {
-            bg_scroll = glfwGetTime() * 0.5f;
-        }
+        bg_scroll = glfwGetTime() * SCROLL;
         double bg_offset = fmod(bg_scroll, 4.5);
         for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
-            spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 4.5f, 9.0f);
+            spriter_draw(&spriter, texture_bg,
+                x - bg_offset, 0.0f, BG_LAYER,
+                0.0f, BG_WIDTH, BG_HEIGHT);
         }
 
         // draw pipes (every 4.0f units starting at 0.0f)
@@ -344,15 +367,21 @@ main(int argc, char* argv[])
             if (x < 0.0f) continue;
             long pipe_index = x / 4.0f;
             float gap = pipes[pipe_index % PIPE_COUNT];
-            float top = gap + 6.0f;
-            float bot = gap - 6.0f;
+            float top = gap + GAP;
+            float bot = gap - GAP;
             float pipe_x = pipe_index * 4.0f;
-            spriter_draw(&spriter, texture_pipe_top, pipe_x - camera, top, 0.1f, 0.0f, 1.0f, 8.0f);
-            spriter_draw(&spriter, texture_pipe_bot, pipe_x - camera, bot, 0.1f, 0.0f, 1.0f, 8.0f);
+            spriter_draw(&spriter, texture_pipe_top,
+                pipe_x - camera, top, PIPE_LAYER,
+                0.0f, PIPE_WIDTH, PIPE_HEIGHT);
+            spriter_draw(&spriter, texture_pipe_bot,
+                pipe_x - camera, bot, PIPE_LAYER,
+                0.0f, PIPE_WIDTH, PIPE_HEIGHT);
         }
 
         // draw bird
-        spriter_draw(&spriter, texture_bird, bird_pos_x - camera, bird_pos_y, 0.2f, bird_vel_y * 5.0f, 1.0f, 1.0f);
+        spriter_draw(&spriter, texture_bird,
+            bird_pos_x - camera, bird_pos_y, BIRD_LAYER,
+            bird_vel_y * 5.0f, BIRD_WIDTH, BIRD_HEIGHT);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         frame_count++;
