@@ -71,9 +71,7 @@ resource_headers =           \
 res/models/sprite.h: res/models/sprite.obj
 res/shaders/sprite_frag.h: res/shaders/sprite_frag.glsl
 res/shaders/sprite_vert.h: res/shaders/sprite_vert.glsl
-res/sounds/death.h: res/sounds/death.wav
-res/sounds/flap.h: res/sounds/flap.wav
-res/textures/bg.h: res/textures/bg.jpeg
+res/textures/bg.h: res/textures/bg.jpg
 res/textures/bird.h: res/textures/bird.png
 res/textures/pipe_bot.h: res/textures/pipe_bot.png
 res/textures/pipe_top.h: res/textures/pipe_top.png
@@ -105,21 +103,6 @@ venv:
 	@echo "SHADER  $@"
 	@./venv/bin/python3 scripts/res2header.py $< $@
 
-.SUFFIXES: .wav .h
-.wav.h:
-	@echo "SOUND   $@"
-	@./venv/bin/python3 scripts/res2header.py $< $@
-
-.SUFFIXES: .bmp .h
-.bmp.h:
-	@echo "TEXTURE $@"
-	@./venv/bin/python3 scripts/res2header.py $< $@
-
-.SUFFIXES: .jpeg .h
-.jpeg.h:
-	@echo "TEXTURE $@"
-	@./venv/bin/python3 scripts/res2header.py $< $@
-
 .SUFFIXES: .jpg .h
 .jpg.h:
 	@echo "TEXTURE $@"
@@ -130,12 +113,7 @@ venv:
 	@echo "TEXTURE $@"
 	@./venv/bin/python3 scripts/res2header.py $< $@
 
-.SUFFIXES: .tga .h
-.tga.h:
-	@echo "TEXTURE $@"
-	@./venv/bin/python3 scripts/res2header.py $< $@
-
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr flappy *.exe *.a *.so *.dll src/*.o res/models/*.h res/shaders/*.h res/sounds/*.h res/textures/*.h
+	rm -fr flappy *.exe *.a *.so *.dll src/*.o res/models/*.h res/shaders/*.h res/textures/*.h

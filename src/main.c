@@ -19,8 +19,6 @@
 #include "models/sprite.h"
 #include "shaders/sprite_vert.h"
 #include "shaders/sprite_frag.h"
-#include "sounds/death.h"
-#include "sounds/flap.h"
 #include "textures/bg.h"
 #include "textures/bird.h"
 #include "textures/pipe_bot.h"
