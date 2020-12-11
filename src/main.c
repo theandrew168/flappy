@@ -184,7 +184,9 @@ game_update(struct game* game, GLFWwindow* window, double delta)
     }
 
     // only allow single flaps (not continuous)
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !game->dead) {
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        if (game->dead) game_reset(game);
+
         game->running = true;
         if (!game->space) {
             game->bird_vel_y = FLAP;
@@ -220,6 +222,9 @@ game_update(struct game* game, GLFWwindow* window, double delta)
         }
         if (physics_intersect_circle_rect(game->bird_pos_x, game->bird_pos_y, 0.3f,
                                           pipe_index * 4.0f, bot, PIPE_WIDTH, PIPE_HEIGHT)) {
+            collision = true;
+        }
+        if (game->bird_pos_y > 4.5f || game->bird_pos_y < -4.5f) {
             collision = true;
         }
 
