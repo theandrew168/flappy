@@ -4,7 +4,6 @@
 
 # Build requirements references:
 # https://www.glfw.org/docs/latest/build_guide.html
-# https://miniaud.io/docs/manual/index.html#Building
 
 # CFLAGS breakout by category
 CFLAGS_VERSION = -std=c99
@@ -60,8 +59,6 @@ resource_headers =           \
   res/models/sprite.h        \
   res/shaders/sprite_frag.h  \
   res/shaders/sprite_vert.h  \
-  res/sounds/death.h         \
-  res/sounds/flap.h          \
   res/textures/bg.h          \
   res/textures/bird.h        \
   res/textures/pipe_bot.h    \
