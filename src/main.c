@@ -229,7 +229,7 @@ main(int argc, char* argv[])
     for (long i = 0; i < PIPE_COUNT; i++) {
         float gap = (float)rand() / (float)RAND_MAX;
         gap -= 0.5f;
-        pipes[i] = gap * 2.0f;
+        pipes[i] = gap * 4.0f;
     }
 
     float bird_pos_x = -6.0f;
@@ -276,6 +276,10 @@ main(int argc, char* argv[])
         bird_pos_x += (bird_vel_x * delta);
         bird_pos_y += (bird_vel_y * delta);
         camera += (bird_vel_x * delta);
+
+        // determine score based on bird's position
+        //score = (bird_pos_x + 3.0f) / 4.0f;
+        //printf("score: %ld\n", score);
 
         // check collision
         if (bird_pos_x >= -4.0f) {
@@ -332,7 +336,7 @@ main(int argc, char* argv[])
         }
         double bg_offset = fmod(bg_scroll, 4.5);
         for (float x = -9.0f; x <= 13.5f; x += 4.5f) {
-            spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 2.25f, 4.5f);
+            spriter_draw(&spriter, texture_bg, x - bg_offset, 0.0f, 0.0f, 0.0f, 4.5f, 9.0f);
         }
 
         // draw pipes (every 4.0f units starting at 0.0f)
@@ -343,12 +347,12 @@ main(int argc, char* argv[])
             float top = gap + 6.0f;
             float bot = gap - 6.0f;
             float pipe_x = pipe_index * 4.0f;
-            spriter_draw(&spriter, texture_pipe_top, pipe_x - camera, top, 0.1f, 0.0f, 0.5f, 4.0f);
-            spriter_draw(&spriter, texture_pipe_bot, pipe_x - camera, bot, 0.1f, 0.0f, 0.5f, 4.0f);
+            spriter_draw(&spriter, texture_pipe_top, pipe_x - camera, top, 0.1f, 0.0f, 1.0f, 8.0f);
+            spriter_draw(&spriter, texture_pipe_bot, pipe_x - camera, bot, 0.1f, 0.0f, 1.0f, 8.0f);
         }
 
         // draw bird
-        spriter_draw(&spriter, texture_bird, bird_pos_x - camera, bird_pos_y, 0.2f, bird_vel_y * 5.0f, 0.5f, 0.5f);
+        spriter_draw(&spriter, texture_bird, bird_pos_x - camera, bird_pos_y, 0.2f, bird_vel_y * 5.0f, 1.0f, 1.0f);
 
         // http://www.opengl-tutorial.org/miscellaneous/an-fps-counter/
         frame_count++;
