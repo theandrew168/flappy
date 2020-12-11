@@ -5,6 +5,7 @@
 #include "opengl.h"
 #include "shader.h"
 
+
 enum {
     INFO_LOG_SIZE = 1024,
 };

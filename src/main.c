@@ -179,6 +179,7 @@ game_reset(struct game* game)
 void
 game_update(struct game* game, GLFWwindow* window, double delta)
 {
+    // can game_update be detached from the GLFWwindow* ?
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
@@ -210,6 +211,7 @@ game_update(struct game* game, GLFWwindow* window, double delta)
 
     // check collision
     if (game->bird_pos_x >= -4.0f) {
+        // determine index of the next approaching pipe
         long pipe_index = (game->bird_pos_x + 2.0f) / 4.0f;
         float gap = game->pipes[pipe_index % PIPE_COUNT];
         float top = gap + GAP;
