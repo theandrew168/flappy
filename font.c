@@ -198,7 +198,7 @@ main(int argc, char* argv[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Flappy Bird", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Easy Font Example", NULL, NULL);
     if (window == NULL) {
         const char* error = NULL;
         glfwGetError(&error);
@@ -216,6 +216,8 @@ main(int argc, char* argv[])
     printf("OpenGL Version:  %s\n", glGetString(GL_VERSION));
     printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -227,8 +229,8 @@ main(int argc, char* argv[])
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluOrtho2D(0, 1280, 720, 0);
-        print_string(10.0f, 10.0f, "Hello!", 1.0f, 1.0f, 1.0f);
+        gluOrtho2D(0, 32, 18, 0);
+        print_string(2.0f, 2.0f, "Hello!", 1.0f, 1.0f, 1.0f);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
