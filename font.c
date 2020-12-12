@@ -209,7 +209,6 @@ main(int argc, char* argv[])
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
 
     printf("OpenGL Vendor:   %s\n", glGetString(GL_VENDOR));
     printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));

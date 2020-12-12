@@ -59,7 +59,8 @@
     OPENGL_FUNCTION(glActiveTexture, PFNGLACTIVETEXTUREPROC)                        \
     OPENGL_FUNCTION(glTexImage2D, PFNGLTEXIMAGE2DPROC)                              \
     OPENGL_FUNCTION(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)                      \
-    OPENGL_FUNCTION(glTexParameteri, PFNGLTEXPARAMETERIPROC)
+    OPENGL_FUNCTION(glTexParameteri, PFNGLTEXPARAMETERIPROC)                        \
+    OPENGL_FUNCTION(glPolygonMode, PFNGLPOLYGONMODEPROC)
 
 // Declare an OpenGL function. Other translation units that require
 // calling OpenGL functions will link against these declarations.
