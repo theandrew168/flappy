@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -5,8 +6,11 @@
 
 #include "src/opengl.h"
 
+#include "shaders/font_frag.h"
+#include "shaders/font_vert.h"
+
 // Building:
-// gcc font4x4.c src/opengl.c -std=c99 -DGLFW_INCLUDE_NONE -Ivendor/include -lGL -lglfw
+// gcc font4x4.c src/opengl.c -std=c99 -DGLFW_INCLUDE_NONE -Ires/ -Isrc/ -Ivendor/include -lGL -lglfw
 
 /*
 0000 0
@@ -43,7 +47,7 @@
 // each character has 6 vertices per lit pixel
 // each vertex has 3 floats (x, y, z)
 // each lit pixel occupies 18 floats (72 bytes)
-unsigned short font[] = {
+static const unsigned short font[] = {
     0xeae0,  // 0
     0x4430,  // 1
     0x2ce0,  // 2
@@ -55,6 +59,34 @@ unsigned short font[] = {
     0xeee0,  // 8
     0xea20,  // 9
 };
+
+enum {
+    FLOATS_PER_QUAD = 12,
+};
+
+static const float quads[][FLOATS_PER_QUAD] = {
+    //      top right       top left        bottom left     top right       bottom left     bottom right
+    //      x       y       x       y       x       y       x       y       x       y       x       y
+    [0] = {  0.50f, -0.25f,  0.25f, -0.25f,  0.25f, -0.50f,  0.50f, -0.25f,  0.25f, -0.50f,  0.50f, -0.50f },
+    [1] = { -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f, -0.00f },
+};
+
+long
+font_size(const char* s)
+{
+    char c;
+    while ((c = *s++) != '\0') {
+        c = c - '0';
+        assert(c >= 0 && c <= 9);
+
+        unsigned short glyph = font[c];
+        printf("0x%04x\n", glyph);
+        for (long i = 0; i < 4*4; i++) {
+            char pixel = (glyph >> i) & 1;
+            printf("pixel: %d\n", pixel);
+        }
+    }
+}
 
 
 int
@@ -84,6 +116,8 @@ main(int argc, char* argv[])
 
     glfwMakeContextCurrent(window);
     opengl_load_functions();
+
+    font_size("042");
 
     printf("OpenGL Vendor:   %s\n", glGetString(GL_VENDOR));
     printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));

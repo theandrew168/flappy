@@ -17,8 +17,10 @@
 
 // game resources
 #include "models/sprite.h"
-#include "shaders/sprite_vert.h"
+#include "shaders/font_frag.h"
+#include "shaders/font_vert.h"
 #include "shaders/sprite_frag.h"
+#include "shaders/sprite_vert.h"
 #include "textures/bg.h"
 #include "textures/bird.h"
 #include "textures/pipe_bot.h"
@@ -34,7 +36,12 @@ enum {
 };
 
 struct game {
-    // OpenGL handles for sprite rendering
+    // shader for font rendering
+    unsigned int font_shader;
+    int font_shader_uniform_layer;
+    int font_shader_uniform_color;
+
+    // shader for sprite rendering
     unsigned int sprite_shader;
     int sprite_shader_uniform_model;
     int sprite_shader_uniform_projection;
@@ -42,7 +49,7 @@ struct game {
     unsigned int sprite_model;
     unsigned int sprite_model_vertex_count;
 
-    // OpenGL texture handles
+    // texture handles
     unsigned int texture_bg;
     unsigned int texture_bird;
     unsigned int texture_pipe_bot;
@@ -113,6 +120,11 @@ game_init(struct game* game)
 {
     assert(game != NULL);
 
+    // create shader for rendering text
+    game->font_shader = shader_compile_and_link(SHADER_FONT_VERT_SOURCE, SHADER_FONT_FRAG_SOURCE);
+    game->font_shader_uniform_layer = glGetUniformLocation(game->font_shader, "u_layer");
+    game->font_shader_uniform_color = glGetUniformLocation(game->font_shader, "u_color");
+
     // create shader for rendering sprites
     game->sprite_shader = shader_compile_and_link(SHADER_SPRITE_VERT_SOURCE, SHADER_SPRITE_FRAG_SOURCE);
     game->sprite_shader_uniform_model = glGetUniformLocation(game->sprite_shader, "u_model");
@@ -144,6 +156,7 @@ game_free(struct game* game)
 {
     assert(game != NULL);
 
+    glDeleteProgram(game->font_shader);
     glDeleteProgram(game->sprite_shader);
     glDeleteBuffers(1, &game->sprite_buffer);
     glDeleteVertexArrays(1, &game->sprite_model);

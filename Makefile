@@ -59,6 +59,8 @@ libflappy.a: $(libflappy_objects)
 # Declare required resource headers
 resource_headers =           \
   res/models/sprite.h        \
+  res/shaders/font_frag.h    \
+  res/shaders/font_vert.h    \
   res/shaders/sprite_frag.h  \
   res/shaders/sprite_vert.h  \
   res/textures/bg.h          \
@@ -68,6 +70,8 @@ resource_headers =           \
 
 # Express dependencies between header and resource files
 res/models/sprite.h: res/models/sprite.obj
+res/shaders/font_frag.h: res/shaders/font_frag.glsl
+res/shaders/font_vert.h: res/shaders/font_vert.glsl
 res/shaders/sprite_frag.h: res/shaders/sprite_frag.glsl
 res/shaders/sprite_vert.h: res/shaders/sprite_vert.glsl
 res/textures/bg.h: res/textures/bg.jpg
