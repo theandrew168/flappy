@@ -1,18 +1,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#include <GLFW/glfw3.h>
+#include "font.h"
 
-#include "src/opengl.h"
-#include "src/shader.h"
 
-#include "shaders/font_frag.h"
-#include "shaders/font_vert.h"
-
-// Building:
-// gcc font4x4.c src/opengl.c src/shader.c -std=c99 -DGLFW_INCLUDE_NONE -Ires/ -Isrc/ -Ivendor/include -lGL -lglfw
+// Simple 4x4 bitmap font renderer.
 
 /*
 
@@ -114,17 +107,17 @@ static const float quads[QUADS_PER_GLYPH][FLOATS_PER_QUAD] = {
 };
 
 long
-font_size(const char* s)
+font_size(const char* str)
 {
-    assert(s != NULL);
+    assert(str != NULL);
     long size = 0;
 
     char c;
-    while ((c = *s++) != '\0') {
+    while ((c = *str++) != '\0') {
         c = c - '0';
         assert(c >= 0 && c <= 9);
 
-        unsigned short glyph = font[c];
+        unsigned short glyph = font[(unsigned char)c];
         for (long i = 0; i < 4*4; i++) {
             char quad = (glyph >> i) & 1;
             if (quad) {
@@ -137,17 +130,17 @@ font_size(const char* s)
 }
 
 long
-font_vertices(const char* s)
+font_vertices(const char* str)
 {
-    assert(s != NULL);
+    assert(str != NULL);
     long vertices = 0;
 
     char c;
-    while ((c = *s++) != '\0') {
+    while ((c = *str++) != '\0') {
         c = c - '0';
         assert(c >= 0 && c <= 9);
 
-        unsigned short glyph = font[c];
+        unsigned short glyph = font[(unsigned char)c];
         for (long i = 0; i < 4*4; i++) {
             char quad = (glyph >> i) & 1;
             if (!quad) continue;
@@ -160,126 +153,31 @@ font_vertices(const char* s)
 }
 
 void
-font_print(const char* s, float* b, long size)
+font_print(const char* str, float* buffer, long size)
 {
-    assert(s != NULL);
-    assert(b != NULL);
-    assert(size >= font_size(s));
+    assert(str != NULL);
+    assert(buffer != NULL);
+    assert(size >= font_size(str));
 
     long x = 0;
     long y = 0;
 
     char c;
-    while ((c = *s++) != '\0') {
+    while ((c = *str++) != '\0') {
         c = c - '0';
         assert(c >= 0 && c <= 9);
 
-        unsigned short glyph = font[c];
+        unsigned short glyph = font[(unsigned char)c];
         for (long i = 0; i < 4*4; i++) {
             char quad = (glyph >> i) & 1;
             if (!quad) continue;
 
             for (long v = 0; v < VERTICES_PER_QUAD; v++) {
-                *b++ = quads[i][v*2 + 0] + x;
-                *b++ = quads[i][v*2 + 1] + y;
+                *buffer++ = quads[i][v*2 + 0] + x;
+                *buffer++ = quads[i][v*2 + 1] + y;
             }
         }
 
         x += 1;
     }
-}
-
-
-int
-main(int argc, char* argv[])
-{
-    if (!glfwInit()) {
-        const char* error = NULL;
-        glfwGetError(&error);
-        fprintf(stderr, "failed to init GLFW3: %s\n", error);
-        return EXIT_FAILURE;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-
-    GLFWwindow* window = glfwCreateWindow(500, 500, "4x4 Font Example", NULL, NULL);
-    if (window == NULL) {
-        const char* error = NULL;
-        glfwGetError(&error);
-        fprintf(stderr, "failed to create GLFW3 window: %s\n", error);
-
-        glfwTerminate();
-        return EXIT_FAILURE;
-    }
-
-    glfwMakeContextCurrent(window);
-    opengl_load_functions();
-
-    unsigned shader = shader_compile_and_link(SHADER_FONT_VERT_SOURCE, SHADER_FONT_FRAG_SOURCE);
-
-    const char str[] = "042";
-    long size = font_size(str);
-    long vertices = font_vertices(str);
-    printf("size:  %ld\n", size);
-    printf("verts: %ld\n", vertices);
-
-    float* buf = malloc(size);
-    font_print(str, buf, size);
-
-    for (long i = 0; i < vertices / 3; i++) {
-        printf("(%f,%f) (%f,%f) (%f,%f)\n",
-            buf[i*6 + 0], buf[i*6 + 1],
-            buf[i*6 + 2], buf[i*6 + 3],
-            buf[i*6 + 4], buf[i*6 + 5]);
-    }
-
-    unsigned vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    unsigned vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-    glBufferData(GL_ARRAY_BUFFER, size, buf, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (const void*)0);
-    glEnableVertexAttribArray(0);
-
-    free(buf);
-
-    printf("OpenGL Vendor:   %s\n", glGetString(GL_VENDOR));
-    printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
-    printf("OpenGL Version:  %s\n", glGetString(GL_VERSION));
-    printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    while (!glfwWindowShouldClose(window)) {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
-
-        glViewport(0.0f, 0.0f, 500.0f, 500.0f);
-        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glUseProgram(shader);
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, vertices);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    } 
-
-    glDeleteProgram(shader);
-    glDeleteBuffers(1, &vbo);
-    glDeleteVertexArrays(1, &vao);
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
-
-    return EXIT_SUCCESS;
 }

@@ -31,6 +31,7 @@ default: flappy
 
 # Declare library sources
 libflappy_sources =  \
+  src/font.c         \
   src/model.c        \
   src/opengl.c       \
   src/physics.c      \
@@ -39,6 +40,7 @@ libflappy_sources =  \
 libflappy_objects = $(libflappy_sources:.c=.o)
 
 # Express dependencies between object and source files
+src/font.o: src/font.c src/font.h
 src/model.o: src/model.c src/model.h src/opengl.h
 src/opengl.o: src/opengl.c src/opengl.h
 src/physics.o: src/physics.c src/physics.h
