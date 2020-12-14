@@ -15,54 +15,23 @@
 // gcc font4x4.c src/opengl.c src/shader.c -std=c99 -DGLFW_INCLUDE_NONE -Ires/ -Isrc/ -Ivendor/include -lGL -lglfw
 
 /*
-0000 0
-0001 1
-0010 2
-0011 3 
-0100 4
-0101 5
-0110 6
-0111 7
-1000 8
-1001 9
-1010 a
-1011 b
-1100 c
-1101 d
-1110 e
-1111 f
 
-0 -> 0xeae0:
+* each nibble is a line from top to bottom
+* each character has a width and height of 1 unit
+* a chararacter's x and y are in the center
+* kerning is built into the font
+* each character has 2 triangles per lit pixel
+* each character has 6 vertices per lit pixel
+* each vertex has 2 floats (x, y)
+* each lit pixel occupies 12 floats (48 bytes)
+
+0xeae0
+------
 
 000.
 0.0.
 000.
 ....
-
-*/
-
-// each nibble is a line from top to bottom
-// each character has a width and height of 1 unit
-// a chararacter's x and y are in the center
-// kerning is built into the font
-// each character has 2 triangles per lit pixel
-// each character has 6 vertices per lit pixel
-// each vertex has 2 floats (x, y)
-// each lit pixel occupies 12 floats (48 bytes)
-static const unsigned short font[] = {
-    0xeae0,  // 0
-    0x4430,  // 1
-    0x2ce0,  // 2
-    0xe6e0,  // 3
-    0xae20,  // 4
-    0xec20,  // 5
-    0x8ae0,  // 6
-    0xe220,  // 7
-    0xeee0,  // 8
-    0xea20,  // 9
-};
-
-/*
 
 (-0.5,0.5)   (0.0,0.5)   (0.5,0.5)
      +-----+-----+-----+-----+
@@ -80,6 +49,34 @@ static const unsigned short font[] = {
      +-----+-----+-----+-----+
 (-0.5,-0.5)  (0.0,-0.5)  (0.5,-0.5)
 
+Each quad is comprised of 2 CCW triangles:
+
+  1     0
+  +-----+ 3
+  |t1 / |
+  |  /  |
+  | / t2|
+2 +-----+
+  4     5
+
+*/
+
+// https://simplifier.neocities.org/4x4.html
+static const unsigned short font[] = {
+    0xeae0,  // 0
+    0x4430,  // 1
+    0x2ce0,  // 2
+    0xe6e0,  // 3
+    0xae20,  // 4
+    0xec20,  // 5
+    0x8ae0,  // 6
+    0xe220,  // 7
+    0xeee0,  // 8
+    0xea20,  // 9
+};
+
+/*
+
 */
 
 enum {
@@ -89,6 +86,7 @@ enum {
     VERTICES_PER_TRIANGLE = 3,
     FLOATS_PER_VERTEX = 2,
 
+    VERTICES_PER_QUAD = TRIANGLES_PER_QUAD * VERTICES_PER_TRIANGLE,
     FLOATS_PER_QUAD = TRIANGLES_PER_QUAD * VERTICES_PER_TRIANGLE * FLOATS_PER_VERTEX,
 };
 
@@ -139,10 +137,10 @@ font_size(const char* s)
 }
 
 long
-font_triangles(const char* s)
+font_vertices(const char* s)
 {
     assert(s != NULL);
-    long triangles = 0;
+    long vertices = 0;
 
     char c;
     while ((c = *s++) != '\0') {
@@ -152,13 +150,13 @@ font_triangles(const char* s)
         unsigned short glyph = font[c];
         for (long i = 0; i < 4*4; i++) {
             char quad = (glyph >> i) & 1;
-            if (quad) {
-                triangles += TRIANGLES_PER_QUAD;
-            }
+            if (!quad) continue;
+
+            vertices += VERTICES_PER_QUAD;
         }
     }
 
-    return triangles;
+    return vertices;
 }
 
 void
@@ -179,11 +177,15 @@ font_print(const char* s, float* b, long size)
         unsigned short glyph = font[c];
         for (long i = 0; i < 4*4; i++) {
             char quad = (glyph >> i) & 1;
-            if (quad) {
-                memcpy(b, quads[i], FLOATS_PER_QUAD * sizeof(float));
-                b += FLOATS_PER_QUAD;
+            if (!quad) continue;
+
+            for (long v = 0; v < VERTICES_PER_QUAD; v++) {
+                *b++ = quads[i][v*2 + 0] + x;
+                *b++ = quads[i][v*2 + 1] + y;
             }
         }
+
+        x += 1;
     }
 }
 
@@ -218,17 +220,16 @@ main(int argc, char* argv[])
 
     unsigned shader = shader_compile_and_link(SHADER_FONT_VERT_SOURCE, SHADER_FONT_FRAG_SOURCE);
 
-    //const char str[] = "042";
-    const char str[] = "0";
+    const char str[] = "042";
     long size = font_size(str);
-    long triangles = font_triangles(str);
-    printf("size: %ld\n", size);
-    printf("tris: %ld\n", triangles);
+    long vertices = font_vertices(str);
+    printf("size:  %ld\n", size);
+    printf("verts: %ld\n", vertices);
 
     float* buf = malloc(size);
     font_print(str, buf, size);
 
-    for (long i = 0; i < triangles; i++) {
+    for (long i = 0; i < vertices / 3; i++) {
         printf("(%f,%f) (%f,%f) (%f,%f)\n",
             buf[i*6 + 0], buf[i*6 + 1],
             buf[i*6 + 2], buf[i*6 + 3],
@@ -267,7 +268,7 @@ main(int argc, char* argv[])
 
         glUseProgram(shader);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, triangles * 3);
+        glDrawArrays(GL_TRIANGLES, 0, vertices);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
