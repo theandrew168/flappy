@@ -235,20 +235,17 @@ main(int argc, char* argv[])
             buf[i*6 + 4], buf[i*6 + 5]);
     }
 
-    unsigned vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, size, buf, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     unsigned vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+
+    unsigned vbo;
+    glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, size, buf, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (const void*)0);
     glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     free(buf);
 
@@ -264,15 +261,13 @@ main(int argc, char* argv[])
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        glViewport(-0.5f, -0.5f, 1.0f, 1.0f);
+        glViewport(0.0f, 0.0f, 500.0f, 500.0f);
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shader);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, triangles * 3);
-        glBindVertexArray(0);
-        glUseProgram(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
