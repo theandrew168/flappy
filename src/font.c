@@ -57,7 +57,7 @@ Each quad is comprised of 2 CCW triangles:
 // https://simplifier.neocities.org/4x4.html
 static const unsigned short font[] = {
     0xeae0,  // 0
-    0x4430,  // 1
+    0x44e0,  // 1
     0x2ce0,  // 2
     0xe6e0,  // 3
     0xae20,  // 4

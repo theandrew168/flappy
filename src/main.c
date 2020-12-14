@@ -9,6 +9,7 @@
 #include <linmath/linmath.h>
 
 #include "config.h"
+#include "font.h"
 #include "model.h"
 #include "opengl.h"
 #include "physics.h"
@@ -39,7 +40,8 @@ struct game {
     // shader for font rendering
     unsigned int font_shader;
     int font_shader_uniform_layer;
-    int font_shader_uniform_color;
+    int font_shader_uniform_model;
+    int font_shader_uniform_projection;
 
     // shader for sprite rendering
     unsigned int sprite_shader;
@@ -64,6 +66,7 @@ struct game {
     bool running;
     bool dead;
     bool space;
+    long score;
 
     // game objects
     float camera;
@@ -108,11 +111,58 @@ draw_sprite(struct game* game, unsigned t, float x, float y, float z, float r, f
 
     // draw the sprite!
     glDrawArrays(GL_TRIANGLES, 0, game->sprite_model_vertex_count);
+}
 
-    // unbind everything
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
+static void
+draw_text(struct game* game, const char* str, float x, float y, float z, float sx, float sy)
+{
+    // bind the shader
+    glUseProgram(game->font_shader);
+
+    // setup layer
+    glUniform1f(game->font_shader_uniform_layer, z);
+
+    // setup model matrix
+    mat4x4 m = {{ 0 }};
+    mat4x4_translate(m, x, y, 0.0f);
+    mat4x4_scale_aniso(m, m, sx, sy, 1.0f);
+    glUniformMatrix4fv(game->font_shader_uniform_model, 1, GL_FALSE, (const float*)m);
+
+    // setup projection matrix
+    mat4x4 p = {{ 0 }};
+    mat4x4_identity(p);
+    mat4x4_ortho(p, -(WIDTH / 2.0f), (WIDTH / 2.0f), -(HEIGHT / 2.0f), (HEIGHT / 2.0f), -1.0f, 1.0f);
+    glUniformMatrix4fv(game->font_shader_uniform_projection, 1, GL_FALSE, (const float*)p);
+
+    long vertices = font_vertices(str);
+
+    long size = font_size(str);
+    float* buf = malloc(size);
+    assert(buf != NULL);
+
+    // amazing 4x4 bitmap font clarity
+    font_print(str, buf, size);
+
+    unsigned vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    unsigned vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, size, buf, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (const void*)0);
+    glEnableVertexAttribArray(0);
+
+    free(buf);
+
+    glUseProgram(game->font_shader);
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, vertices);
+
+    glDeleteBuffers(1, &vbo);
+    glDeleteVertexArrays(1, &vao);
 }
 
 bool
@@ -123,7 +173,8 @@ game_init(struct game* game)
     // create shader for rendering text
     game->font_shader = shader_compile_and_link(SHADER_FONT_VERT_SOURCE, SHADER_FONT_FRAG_SOURCE);
     game->font_shader_uniform_layer = glGetUniformLocation(game->font_shader, "u_layer");
-    game->font_shader_uniform_color = glGetUniformLocation(game->font_shader, "u_color");
+    game->font_shader_uniform_model = glGetUniformLocation(game->font_shader, "u_model");
+    game->font_shader_uniform_projection = glGetUniformLocation(game->font_shader, "u_projection");
 
     // create shader for rendering sprites
     game->sprite_shader = shader_compile_and_link(SHADER_SPRITE_VERT_SOURCE, SHADER_SPRITE_FRAG_SOURCE);
@@ -175,6 +226,7 @@ game_reset(struct game* game)
     game->running = false;
     game->dead = false;
     game->space = false;
+    game->score = 0;
 
     // game objects
     game->camera = -3.0f;
@@ -247,13 +299,11 @@ game_update(struct game* game, GLFWwindow* window, double delta)
             game->dead = true;
             game->bird_vel_x = 0.0f;
             game->bird_vel_y = 8.0f;
-
-            // determine score based on bird's position
-            long score = (game->bird_pos_x + 3.0f) / 4.0f;
-            printf("%s\n", "YOU DIED!");
-            printf("Score: %ld\n", score);
         }
     }
+
+    // determine score based on bird's position
+    game->score = (game->bird_pos_x + 3.0f) / 4.0f;
 }
 
 void
@@ -308,10 +358,12 @@ game_render(struct game* game, long width, long height)
     draw_sprite(game, game->texture_bird,
         game->bird_pos_x - game->camera, game->bird_pos_y, BIRD_LAYER,
         game->bird_vel_y * 5.0f, BIRD_WIDTH, BIRD_HEIGHT);
+
+    // draw score
+    char score_text[16] = { 0 };
+    snprintf(score_text, 16, "%.3ld", game->score);
+    draw_text(game, score_text, -WIDTH / 2.0f + 1.0f, HEIGHT / 2.0f - 1.0f, 0.5f, 0.5f, 0.5f);
 }
-
-
-
 
 static void
 print_usage(const char* arg0)
