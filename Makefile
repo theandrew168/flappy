@@ -11,7 +11,7 @@ CFLAGS_OPTIMIZATIONS = -g -Og
 CFLAGS_WARNINGS = -Wall -Wextra -Wpedantic
 CFLAGS_DEFINITIONS = -DGLFW_INCLUDE_NONE
 CFLAGS_INCLUDE_DIRS = -Ires/ -Isrc/ -Ivendor/include/
-CFLAGS_EXTRAS = -pthread
+CFLAGS_EXTRAS =
 
 # Declare compiler tools and flags
 AR      = ar
@@ -23,8 +23,8 @@ CFLAGS += $(CFLAGS_WARNINGS)
 CFLAGS += $(CFLAGS_DEFINITIONS)
 CFLAGS += $(CFLAGS_INCLUDE_DIRS)
 CFLAGS += $(CFLAGS_EXTRAS)
-LDFLAGS = -pthread
-LDLIBS  = -ldl -lGL -lglfw -lm
+LDFLAGS =
+LDLIBS  = -ldl -lglfw -lm
 
 # Declare which targets should be built by default
 default: flappy
