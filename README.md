@@ -21,7 +21,7 @@ make
 ```
 brew install make python3
 
-make LDLIBS='-Lvendor/lib64/macos/ -lglfw3 -lm  \
+make LDLIBS='-Lvendor/lib64/macos/ -lglfw3  \
   -framework Cocoa -framework IOKit'
 ```
 
@@ -37,7 +37,8 @@ make  \
   AR=x86_64-w64-mingw32-ar  \
   CC=x86_64-w64-mingw32-gcc  \
   LDFLAGS=-mwindows  \
-  LDLIBS='-Lvendor/lib64/windows/ -lglfw3 -lgdi32 -lkernel32 -luser32'
+  LDLIBS='-Lvendor/lib64/windows/ -lglfw3  \
+    -lgdi32 -lkernel32 -lshell32 -luser32'
 ```
 
 From macOS:
@@ -48,5 +49,6 @@ make  \
   AR=x86_64-w64-mingw32-ar  \
   CC=x86_64-w64-mingw32-gcc  \
   LDFLAGS=-mwindows  \
-  LDLIBS='-Lvendor/lib64/windows/ -lglfw3 -lgdi32 -lkernel32 -luser32'
+  LDLIBS='-Lvendor/lib64/windows/ -lglfw3  \
+    -lgdi32 -lkernel32 -lshell32 -luser32'
 ```
