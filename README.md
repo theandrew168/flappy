@@ -12,38 +12,24 @@ For Windows builds, [mingw-w64](http://mingw-w64.org/doku.php) is used to cross-
 ### Linux
 ```
 # debian-based
-sudo apt install gcc make libglfw3-dev python3 python3-venv
+sudo apt install build-essential libglfw3-dev python3 python3-venv
 
 make
 ```
 
 ### macOS
 ```
-brew install make python3
+# macOS Big Sur on Apple M1
+brew install glfw python3
 
-make LDLIBS='-Lvendor/lib64/macos/ -lglfw3  \
-  -framework Cocoa -framework IOKit'
+make
 ```
 
 ### Windows
-Windows binaries are cross-compiled from Linux or macOS.
-
-From Linux:
+Windows binaries are built by cross-compiling from Linux:
 ```
 # debian-based
 sudo apt install make mingw-w64 python3 python3-venv
-
-make  \
-  AR=x86_64-w64-mingw32-ar  \
-  CC=x86_64-w64-mingw32-gcc  \
-  LDFLAGS=-mwindows  \
-  LDLIBS='-Lvendor/lib64/windows/ -lglfw3  \
-    -lgdi32 -lkernel32 -lshell32 -luser32'
-```
-
-From macOS:
-```
-brew install make mingw-w64 python3
 
 make  \
   AR=x86_64-w64-mingw32-ar  \
