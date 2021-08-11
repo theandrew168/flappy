@@ -22,7 +22,7 @@ make
 # macOS Big Sur on Apple M1
 brew install glfw python3
 
-make
+LIBRARY_PATH=/opt/homebrew/lib/ make
 ```
 
 ### Windows
